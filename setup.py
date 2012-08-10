@@ -14,7 +14,7 @@ setup(name='l20n',
                 'l20n.format',
                 'l20n.format.lol'],
       package_dir = {
-          'l20n': os.path.join('python', 'l20n'),
+          'l20n': os.path.join('lib'),
       }
      )
 
