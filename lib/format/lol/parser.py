@@ -568,6 +568,7 @@ class Parser():
 
     def get_attr_expression(self, idref, ws_post_id):
         if not isinstance(idref, (ast.ParenthesisExpression,
+                                  ast.CallExpression,
                                   ast.Identifier)):
             raise ParserError()
         if self.content[1] == '[':
