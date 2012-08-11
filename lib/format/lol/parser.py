@@ -116,7 +116,7 @@ class Parser():
             entity._template = "<%%(id)s[%s]%s%%(value)s%s%s>" % (index[1], ws1,ws2, at)
         else:
             entity._template = "<%%(id)s%s%%(value)s%s%s>" % (ws1,ws2, at)
-        if attrs:
+        if len(attrs[0]):
             entity.attrs = attrs[0]
             entity._template_attrs = attrs[1]
         return entity
@@ -158,13 +158,9 @@ class Parser():
         self.content = self.content[1:]
         ws4 = self.get_ws()
         attrs = self.get_attributes()
-        if attrs:
-            attrs_template = attrs[1]
-            attrs = attrs[0]
         macro = ast.Macro(id,
                           idlist,
-                          exp,
-                          attrs)
+                          exp)
         macro._template = '<%%(id)s(%s%%(args)s%s)%s{%s%%(expression)s%s}%s%%(attrs)s>' % (ws_pre_idlist,
                                                                                  ws_post_idlist,
                                                                                ws1,
@@ -172,8 +168,9 @@ class Parser():
                                                                                ws3,
                                                                                ws4)
         macro._template_args = ws_idlist_tmpl
-        if attrs:
-            macro._template_attrs = attrs_template
+        if len(attrs[0]):
+            macro.attrs = attrs[0]
+            macro._template_attrs = attrs[1]
         return macro
 
     def get_value(self, none=False):
@@ -329,7 +326,7 @@ class Parser():
     def get_attributes(self):
         if self.content[0] == '>':
             self.content = self.content[1:]
-            return None # should return empty hash?
+            return ({}, [])
         attrs = OrderedDict()
         attrs_template = []
         while 1:
@@ -346,7 +343,7 @@ class Parser():
         if len(attrs):
             return (attrs, attrs_template)
         else:
-            return None
+            return ({}, [])
 
     def get_index(self):
         self.content = self.content[1:]
