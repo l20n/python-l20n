@@ -331,6 +331,7 @@ class Parser():
         attrs_template = []
         while 1:
             attr = self.get_kvp(ast.Attribute)
+            attr.local = attr.key.name[0] == '_'
             attrs[attr.key.name] = attr
             ws_post_item = self.get_ws()
             if self.content[0] == '>':
@@ -340,10 +341,7 @@ class Parser():
             elif ws_post_item == '':
                 raise ParserError()
             attrs_template.append(ws_post_item)
-        if len(attrs):
-            return (attrs, attrs_template)
-        else:
-            return ({}, [])
+        return (attrs, attrs_template)
 
     def get_index(self):
         self.content = self.content[1:]
