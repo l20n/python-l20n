@@ -96,12 +96,13 @@ class Parser():
             entity.local = id.name[0] == '_'
             if index:
                 entity.index = index[0]
-                entity._template_index = index[2]
-                entity._template = "<%%(id)s[%s]%s>" % (index[1], ws1)
-            else:
-                entity._template = "<%%(id)s%s>" % ws1
+                #entity._template_index = index[2]
+                #entity._template = "<%%(id)s[%s]%s>" % (index[1], ws1)
+            #else:
+            #    entity._template = "<%%(id)s%s>" % ws1
             return entity
         if ws1 == '':
+            print(self.content)
             raise ParserError()
         value = self.get_value(none=True)
         ws2 = self.get_ws()
@@ -112,13 +113,13 @@ class Parser():
         at = '%%(attrs)s' if attrs else ''
         if index:
             entity.index = index[0]
-            entity._template_index = index[2]
-            entity._template = "<%%(id)s[%s]%s%%(value)s%s%s>" % (index[1], ws1,ws2, at)
-        else:
-            entity._template = "<%%(id)s%s%%(value)s%s%s>" % (ws1,ws2, at)
+            #entity._template_index = index[2]
+            #entity._template = "<%%(id)s[%s]%s%%(value)s%s%s>" % (index[1], ws1,ws2, at)
+        #else:
+        #    entity._template = "<%%(id)s%s%%(value)s%s%s>" % (ws1,ws2, at)
         if len(attrs[0]):
             entity.attrs = attrs[0]
-            entity._template_attrs = attrs[1]
+            #entity._template_attrs = attrs[1]
         return entity
 
     def get_macro(self, id):
@@ -244,7 +245,6 @@ class Parser():
             return obj[0]
         cs = ast.ComplexString(obj)
         cs._template = '%s%%(content)s%s' % (quote, quote)
-        cs._template_content = ['']
         return cs
 
     def get_array(self):
@@ -572,6 +572,8 @@ class Parser():
             ws_pre = self.get_ws()
             exp = self.get_member_expression()
             ws_post = self.get_ws()
+            if self.content[0] != ']':
+                raise ParserError()
             self.content = self.content[1:]
             attr = ast.AttributeExpression(idref, exp, True)
             attr._template = '%%(expression)s%s.[%s%%(attribute)s%s]' % (ws_post_id, ws_pre, ws_post)
@@ -591,6 +593,8 @@ class Parser():
             ws_pre = self.get_ws()
             exp = self.get_member_expression()
             ws_post = self.get_ws()
+            if self.content[0] != ']':
+                raise ParserError()
             self.content = self.content[1:]
             prop = ast.PropertyExpression(idref, exp, True)
             prop._template = '%%(expression)s%s[%s%%(property)s%s]' % (ws_post_id, ws_pre, ws_post)

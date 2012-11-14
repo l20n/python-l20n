@@ -15,10 +15,11 @@ class LOL(Node):
     body = pyast.seq(Entry, null=True)
 
     _template = '%(body)s'
+    
     def _template_body(self):
-        return [''] + ['\n'] * ( len(self.body) - 1 )
+        return '\n'.join(map(str, self.body))
 
-    _template_body_fillvalue = "\n"
+    #_template_body_fillvalue = "\n"
 
 class Expression(Node):
     _abstract = True
@@ -63,7 +64,11 @@ class Entity(Entry):
     attrs = pyast.dict(Attribute, null=True)
     local = pyast.field(bool, default=False)
 
+    @property
     def _template (self):
+        if isinstance(self.value, String):
+            return "<%%(id)s %s%%(value)s%s>" % (self.value._template_quotes,
+                                                 self.value._template_quotes)
         return "<%(id)s %(value)s>"
 
 
@@ -83,7 +88,8 @@ class Macro(Entry):
 class String(Value):
     content = pyast.field(basestring)
 
-    _template = "\"%(content)s\""
+    _template = "%(content)s"
+    _template_quotes = '"'
 
 class ComplexString(String):
     content = pyast.seq((str, Expression))
@@ -99,7 +105,10 @@ class ComplexString(String):
                 ws.append("}}")
             else:
                 ws.append("")
-        return ws
+        s = ''.join(map(str, self.content))
+        return s
+
+    _template_quotes = '"'
 
 class Array(Value):
     content = pyast.seq(Value, null=True)
