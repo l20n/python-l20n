@@ -22,10 +22,12 @@ class PropertiesConverter:
         'comment': re.compile('#(.*)')
     }
 
-    def __init__(self, s):
+    def __init__(self, s, locale=None):
         self.s = s.split('\n')
         self.lols = {}
-        self._current_locale = None
+        self._current_locale = locale
+        if locale:
+            self.lols[locale] = ast.LOL()
 
     def parse(self):
         for line in self.s:
@@ -63,7 +65,7 @@ class PropertiesConverter:
     def get_entity(self, line):
         m = self.patterns['entity'].match(line)
         if m:
-            id = m.group(1)
+            id = m.group(1).replace('-', '_')
             val = m.group(2)
             #print("entity %s = %s" % (id, val))
             id = ast.Identifier(id)
@@ -72,17 +74,23 @@ class PropertiesConverter:
             self.lols[self._current_locale].body.append(entity)
 
 
-def convert():
-    dpath = '/Users/zbraniecki/projects/mozilla/gaia/apps/homescreen/locale/'
-    path = "/Users/zbraniecki/projects/mozilla/gaia/apps/homescreen/locale/homescreen.properties"
-    f = read_file(path)
-    pc = PropertiesConverter(f)
+def convert(paths, app, source_locale):
+    locales_path = os.path.join(paths['gaia'], 'apps', app, 'locales')
+    source_locale_path = os.path.join(locales_path, '%s.%s.properties' % (app, source_locale))
+
+    f = read_file(source_locale_path)
+    pc = PropertiesConverter(f, locale='en-US')
     lols = pc.parse()
     ser = serializer.Serializer()
     for (loc, lol) in lols.items():
         s = ser.serialize(lol)
-        write_file(os.path.join(dpath, '%s.lol' % loc), s)
+        write_file(os.path.join(locales_path, '%s.%s.lol' % (app, loc)), s)
 
 if __name__ == '__main__':
-    convert()
+    paths = {
+        'gaia': '/Users/zbraniecki/projects/gaia',
+    }
+    app = 'browser'
+    source_locale = 'en-US'
+    convert(paths, app, source_locale)
 
