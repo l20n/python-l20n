@@ -9,7 +9,7 @@ class ParserError(Exception):
 class Parser():
     patterns = {
         'id': re.compile('^([_a-zA-Z]\w*)'),
-        'value': re.compile('^(?P<op>[\'"])(.*?)(?<!\\\)(?P=op)'),
+        'value': re.compile('^(?P<op>\'\'\'|\'|"""|")(.*?)(?<!\\\)(?P=op)'),
     }
     _parse_strings = False
 
@@ -61,7 +61,6 @@ class Parser():
 
     def get_importstatement(self):
         self.content = self.content[6:]
-        self.get_ws()
         if self.content[0] != "(":
             raise ParserError()
         self.content = self.content[1:]
@@ -102,7 +101,6 @@ class Parser():
             #    entity._template = "<%%(id)s%s>" % ws1
             return entity
         if ws1 == '':
-            print(self.content)
             raise ParserError()
         value = self.get_value(none=True)
         ws2 = self.get_ws()
@@ -197,8 +195,14 @@ class Parser():
         match = self.patterns['value'].match(self.content)
         if not match:
             raise ParserError()
-        self.content = self.content[match.end(0):]
-        return ast.String(match.group(2))
+        self.content = self.content[match.end(0):];
+        value = match.group(2)
+        # \\ | \' | \" | \{{
+        value = value.replace('\\\\', '\\');
+        value = value.replace('\\\'', '\'');
+        value = value.replace('\\"', '"');
+        value = value.replace('\{{', '{{');
+        return ast.String(value)
 
     def get_complex_string(self, quote):
         str_end = quote[0]
@@ -212,9 +216,17 @@ class Parser():
                 buffer += self.content[0]
                 self.content = self.content[1:]
             if self.content[0] == '\\':
-                jump = 3 if self.content[1:3] == '{{' else 2
-                buffer += self.content[1:jump]
-                self.content = self.content[jump:]
+                jump = 0
+                if self.content[1] in ('\\','\'', '"'):
+                    jump = 2
+                elif self.content[1:3] == '{{':
+                    jump = 3
+                if jump:
+                    buffer += self.content[1:jump]
+                    self.content = self.content[jump:]
+                else:
+                    buffer += self.content[0]
+                    self.content = self.content[1:]
             if self.content[:2] == '{{':
                 self.content = self.content[2:]
                 if buffer:
@@ -497,22 +509,15 @@ class Parser():
 
     def get_member_expression(self):
         exp = self.get_parenthesis_expression()
-        ws_post_id = self.get_ws()
-        matched = False
         while 1:
             if self.content[0:2] in ('.[', '..'):
-                exp = self.get_attr_expression(exp, ws_post_id)
-                matched = True
+                exp = self.get_attr_expression(exp)
             elif self.content[0] in ('[', '.'):
-                exp = self.get_property_expression(exp, ws_post_id)
-                matched = True
+                exp = self.get_property_expression(exp)
             elif self.content[0] == '(':
-                exp = self.get_call_expression(exp, ws_post_id)
-                matched = True
+                exp = self.get_call_expression(exp)
             else:
                 break
-        if not matched:
-            self.content = '%s%s' % (ws_post_id, self.content)
         return exp
 
     def get_parenthesis_expression(self):
@@ -561,7 +566,7 @@ class Parser():
         ve._template = "$%(id)s"
         return ve
 
-    def get_attr_expression(self, idref, ws_post_id):
+    def get_attr_expression(self, idref):
         if not isinstance(idref, (ast.ParenthesisExpression,
                                   ast.CallExpression,
                                   ast.Identifier,
@@ -576,7 +581,7 @@ class Parser():
                 raise ParserError()
             self.content = self.content[1:]
             attr = ast.AttributeExpression(idref, exp, True)
-            attr._template = '%%(expression)s%s.[%s%%(attribute)s%s]' % (ws_post_id, ws_pre, ws_post)
+            attr._template = '%%(expression)s.[%s%%(attribute)s%s]' % (ws_pre, ws_post)
             return attr
         elif self.content[1] == '.':
             self.content = self.content[2:]
@@ -586,7 +591,7 @@ class Parser():
             return ae
         raise ParserError()
 
-    def get_property_expression(self, idref, ws_post_id):
+    def get_property_expression(self, idref):
         d = self.content[0]
         if d == '[':
             self.content = self.content[1:]
@@ -597,7 +602,7 @@ class Parser():
                 raise ParserError()
             self.content = self.content[1:]
             prop = ast.PropertyExpression(idref, exp, True)
-            prop._template = '%%(expression)s%s[%s%%(property)s%s]' % (ws_post_id, ws_pre, ws_post)
+            prop._template = '%%(expression)s[%s%%(property)s%s]' % (ws_pre, ws_post)
             return prop
         elif d == '.':
             self.content = self.content[1:]
@@ -608,13 +613,13 @@ class Parser():
         else:
             raise ParserError()
 
-    def get_call_expression(self, callee, ws_post_id):
+    def get_call_expression(self, callee):
         mcall = ast.CallExpression(callee)
         self.content = self.content[1:]
         ws_pre = self.get_ws()
         if self.content[0] == ')':
             self.content = self.content[1:]
-            mcall._template = '%%(callee)s%s()' % (ws_post_id)
+            mcall._template = '%(callee)s()'
             return mcall
         template = []
         while 1:
@@ -629,7 +634,7 @@ class Parser():
             else:
                 raise ParserError()
         self.content = self.content[1:]
-        mcall._template = '%%(callee)s%s(%s%%(arguments)s%s)' % (ws_post_id, ws_pre, ws_post)
+        mcall._template = '%%(callee)s(%s%%(arguments)s%s)' % (ws_pre, ws_post)
         mcall._template_arguments = template
         return mcall
 
