@@ -63,6 +63,18 @@ class L20nParserTestCase(unittest.TestCase):
         lol = self.parser.parse(string)
         self.assertEqual(lol.body[0].value.content, "'string'")
 
+        string = "<id 'test \{{ more'>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol.body[0].value.content, "test {{ more")
+
+        string = "<id 'test \\\\ more'>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol.body[0].value.content, "test \ more")
+
+        string = "<id 'test \\a more'>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol.body[0].value.content, "test \\a more")
+
     def test_basic_errors(self):
         strings = [
             '< "str\\"ing">',
@@ -636,13 +648,13 @@ class L20nParserTestCase(unittest.TestCase):
         string = "<id[ x[ 'd' ] ] 'foo' >"
         lol = self.parser.parse(string)
 
-        string = "<id[ x ['d'] ] 'foo' >"
+        string = "<id[ x['d'] ] 'foo' >"
         lol = self.parser.parse(string)
 
         string = "<id[x['d']['e']] 'foo' >"
         lol = self.parser.parse(string)
 
-        string = "<id[! (a?b:c) ['d']['e']] 'foo' >"
+        string = "<id[! (a?b:c)['d']['e']] 'foo' >"
         lol = self.parser.parse(string)
 
     def test_member_expression_errors(self):
