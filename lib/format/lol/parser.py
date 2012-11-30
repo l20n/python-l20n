@@ -322,6 +322,25 @@ class Parser():
         h._template_content = hash_template
         return h
 
+    def get_item_list(self, cl, close):
+        self.get_ws()
+        if self.content[0] == close:
+            self.content = self.content[1:]
+            return []
+        items = []
+        while(True):
+            items.append(cl())
+            self.get_ws()
+            if self.content[0] == ',':
+                self.content = self.content[1:]
+                self.get_ws()
+            elif self.content[0] == close:
+                self.content = self.content[1:]
+                break
+            else:
+                raise ParserError()
+        return items
+
     def get_kvp(self, cl):
         key = self.get_identifier()
         ws_post_key = self.get_ws()
@@ -335,6 +354,23 @@ class Parser():
                                                      ws_pre_value)
         return kvp
 
+    def get_kvp_with_index(self, cl):
+        key = self.get_identifier()
+        index = []
+        if self.content[0] == '[':
+            self.content = self.content[1:]
+            self.get_ws()
+            index = self.get_item_list(self.get_expression, ']')
+        self.get_ws()
+        if self.content[0] != ':':
+            raise ParserError()
+        self.content = self.content[1:]
+        ws_pre_value = self.get_ws()
+        val = self.get_value()
+        kvp = cl(key, val, index)
+        kvp._template = '%%(key)s:%s%%(value)s' % (ws_pre_value)
+        return kvp
+
     def get_attributes(self):
         if self.content[0] == '>':
             self.content = self.content[1:]
@@ -342,7 +378,7 @@ class Parser():
         attrs = OrderedDict()
         attrs_template = []
         while 1:
-            attr = self.get_kvp(ast.Attribute)
+            attr = self.get_kvp_with_index(ast.Attribute)
             attr.local = attr.key.name[0] == '_'
             attrs[attr.key.name] = attr
             ws_post_item = self.get_ws()

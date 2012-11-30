@@ -133,6 +133,18 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(attr.key.name, "attr3")
         self.assertEqual(attr.value.content, "foo3")
 
+    def test_attributes_with_indexes(self):
+        string = "<id attr[2]: 'foo'>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol.body[0].attrs['attr'].index[0].value, 2)
+        string = "<id attr[2+3?'foo':'foo2']: 'foo'>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol.body[0].attrs['attr'].index[0].test.left.value, 2)
+        self.assertEqual(lol.body[0].attrs['attr'].index[0].test.right.value, 3)
+        string = "<id attr[2, 3]: 'foo'>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol.body[0].attrs['attr'].index[0].value, 2)
+        self.assertEqual(lol.body[0].attrs['attr'].index[1].value, 3)
 
     def test_attribute_errors(self):
         strings = [

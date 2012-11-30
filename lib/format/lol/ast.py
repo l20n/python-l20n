@@ -53,6 +53,7 @@ class HashItem(KeyValuePair):
     default = pyast.field(bool, default=False)
 
 class Attribute(KeyValuePair):
+    index = pyast.seq(Expression, null=True)
     local = pyast.field(bool, default=False)
 
 ### Entries
