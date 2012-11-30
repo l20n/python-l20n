@@ -138,6 +138,9 @@ class LogicalOperator(Operator):
 ### Expressions
 
 class Literal(Expression):
+    _abstract = True
+
+class Number(Literal):
     value = pyast.field(int)
     
     __template = '%(value)s'

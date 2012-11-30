@@ -541,7 +541,7 @@ class Parser():
         if ptr:
             d =  int(self.content[:ptr])
             self.content = self.content[ptr:]
-            literal = ast.Literal(d)
+            literal = ast.Number(d)
             literal._template = '%(value)s'
             return literal
         #value
