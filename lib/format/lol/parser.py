@@ -156,20 +156,19 @@ class Parser():
             raise ParserError()
         self.content = self.content[1:]
         ws4 = self.get_ws()
-        attrs = self.get_attributes()
+        if self.content[0] != '>':
+            raise ParserError()
+        self.content = self.content[1:]
         macro = ast.Macro(id,
                           idlist,
                           exp)
-        macro._template = '<%%(id)s(%s%%(args)s%s)%s{%s%%(expression)s%s}%s%%(attrs)s>' % (ws_pre_idlist,
+        macro._template = '<%%(id)s(%s%%(args)s%s)%s{%s%%(expression)s%s}%s>' % (ws_pre_idlist,
                                                                                  ws_post_idlist,
                                                                                ws1,
                                                                                ws2,
                                                                                ws3,
                                                                                ws4)
         macro._template_args = ws_idlist_tmpl
-        if len(attrs[0]):
-            macro.attrs = attrs[0]
-            macro._template_attrs = attrs[1]
         return macro
 
     def get_value(self, none=False):

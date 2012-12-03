@@ -82,7 +82,6 @@ class Macro(Entry):
     id = pyast.field(Identifier)
     args = pyast.seq(VariableExpression)
     expression = pyast.field(Expression)
-    attrs = pyast.dict(Attribute, null=True)
 
 ### Values
 
