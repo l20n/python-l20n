@@ -53,6 +53,7 @@ class HashItem(KeyValuePair):
     default = pyast.field(bool, default=False)
 
 class Attribute(KeyValuePair):
+    index = pyast.seq(Expression, null=True)
     local = pyast.field(bool, default=False)
 
 ### Entries
@@ -81,7 +82,6 @@ class Macro(Entry):
     id = pyast.field(Identifier)
     args = pyast.seq(VariableExpression)
     expression = pyast.field(Expression)
-    attrs = pyast.dict(Attribute, null=True)
 
 ### Values
 
@@ -138,6 +138,9 @@ class LogicalOperator(Operator):
 ### Expressions
 
 class Literal(Expression):
+    _abstract = True
+
+class Number(Literal):
     value = pyast.field(int)
     
     __template = '%(value)s'

@@ -74,17 +74,35 @@ class PropertiesConverter:
             self.lols[self._current_locale].body.append(entity)
 
 
-def convert(paths, app, source_locale):
-    locales_path = os.path.join(paths['gaia'], 'apps', app, 'locales')
-    source_locale_path = os.path.join(locales_path, '%s.%s.properties' % (app, source_locale))
-
-    f = read_file(source_locale_path)
+def convert_file(path, res_path):
+    f = read_file(path)
     pc = PropertiesConverter(f, locale='en-US')
     lols = pc.parse()
     ser = serializer.Serializer()
     for (loc, lol) in lols.items():
-        s = ser.serialize(lol)
-        write_file(os.path.join(locales_path, '%s.%s.lol' % (app, loc)), s)
+        s = ser.serialize(lol, default=True)
+        write_file(res_path, s)
+
+def convert(paths, app, source_locale):
+    locales_path = os.path.join(paths['gaia'], 'apps', app, 'locales')
+    source_locale_path = os.path.join(locales_path, '%s.%s.properties' % (app, source_locale))
+    #convert_file(source_locale_path, os.path.join(locales_path, '%s.%s.lol' % (app, source_locale)))
+
+    locales_path = os.path.join(paths['gaia'], 'shared', 'locales', 'branding')
+    source_locale_path = os.path.join(locales_path, 'official', 'branding.en-US.properties')
+    convert_file(source_locale_path, os.path.join(locales_path, 'branding.en-US.lol'))
+
+    locales_path = os.path.join(paths['gaia'], 'shared', 'locales', 'date')
+    source_locale_path = os.path.join(locales_path, 'date.en-US.properties')
+    #convert_file(source_locale_path, os.path.join(locales_path, 'date.en-US.lol'))
+
+    locales_path = os.path.join(paths['gaia'], 'shared', 'locales', 'permissions')
+    source_locale_path = os.path.join(locales_path, 'permissions.en-US.properties')
+    convert_file(source_locale_path, os.path.join(locales_path, 'permissions.en-US.lol'))
+
+    locales_path = os.path.join(paths['gaia'], 'shared', 'locales', 'tz')
+    source_locale_path = os.path.join(locales_path, 'tz.en-US.properties')
+    convert_file(source_locale_path, os.path.join(locales_path, 'tz.en-US.lol'))
 
 if __name__ == '__main__':
     paths = {
