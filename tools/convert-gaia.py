@@ -90,7 +90,7 @@ if __name__ == '__main__':
     paths = {
         'gaia': '/Users/zbraniecki/projects/gaia',
     }
-    app = 'browser'
+    app = 'settings'
     source_locale = 'en-US'
     convert(paths, app, source_locale)
 
