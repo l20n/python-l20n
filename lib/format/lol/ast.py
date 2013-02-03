@@ -6,7 +6,7 @@ if sys.version >= '3':
 
 class Node(pyast.Node):
     _abstract = True
-    _debug = False
+    _debug = True
 
 class Entry(Node):
     _abstract = True
@@ -56,6 +56,10 @@ class Attribute(KeyValuePair):
     index = pyast.seq(Expression, null=True)
     local = pyast.field(bool, default=False)
 
+    @property
+    def _template(self):
+        return "  %(key)s: \"%(value)s\"" % self
+
 ### Entries
 
 class Entity(Entry):
@@ -64,13 +68,19 @@ class Entity(Entry):
     value = pyast.field(Value, null=True)
     attrs = pyast.dict(Attribute, null=True)
     local = pyast.field(bool, default=False)
-
+    
     @property
     def _template (self):
         if isinstance(self.value, String):
+            if len(self.attrs):
+                attrs = "\n".join([str(a) for a in self.attrs.values()])
+                return "<%%(id)s %s%%(value)s%s\n%s>" % (self.value._template_quotes,
+                                                       self.value._template_quotes,
+                                                       attrs)
             return "<%%(id)s %s%%(value)s%s>" % (self.value._template_quotes,
                                                  self.value._template_quotes)
         return "<%(id)s %(value)s>"
+
 
 
 class Comment(Entry):
