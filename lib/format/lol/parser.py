@@ -17,6 +17,40 @@ class Parser():
 
         return self.getLOL()
 
+    def getAttributes(self):
+        attrs = []
+        while True:
+            attr = self.getKVPWithIndex('Attribute')
+            attr['local'] = attr['key']['name'][0] == '_'
+            attrs.append(attr)
+            ws1 = self.getRequiredWS()
+            ch = self._source[self._index]
+            if ch == '>':
+                break
+            elif not ws1:
+                raise self.error('Expected ">"')
+        return attrs
+
+    def getKVPWithIndex(self, type=None):
+        key = self.getIdentifier()
+        index = []
+
+        if self._source[self._index] == '[':
+            self._index += 1
+            self.getWS()
+            index = self.getItemList(self.getExpression, ']')
+        self.getWS()
+        if self._source[self._index] != ':':
+            raise self.error('Expected ":"')
+        self._index += 1
+        self.getWS()
+        return {
+            'type': type,
+            'key': key,
+            'value': self.getValue(),
+            'index': index
+        }
+
     def getString(self, opchar):
         l = len(opchar)
         self._index += l
@@ -28,7 +62,7 @@ class Parser():
               ord(self._source[close - 2]) != 92:
             close = self._source.find(opchar, close + 1)
         if close == -1:
-            raise Exception()
+            raise self.error('Unclosed string literal')
         s = self._source[start:close]
         self._index = close + l
 
@@ -44,40 +78,61 @@ class Parser():
             'isNotComplex': s.find('{{') == -1  # why || undefined in js?
         }
 
-    def getValue(self, optional, ch=None):
+    def getValue(self, optional=False, ch=None):
         if ch is None:
-            ch = self._source[self._index]
+            if self._length > self._index:
+                ch = self._source[self._index]
+            else:
+                ch = None
         if ch == "'" or ch == '"':
             if ch == self._source[self._index + 1] and \
                ch == self._source[self._index + 2]:
                 return self.getString(ch*3)
             return self.getString(ch)
 
+        if not optional:
+            raise self.error('Unknown value type')
+        return None
+
     def getWS(self, wschars=string.whitespace):
-        try:
-            if self._source[0] not in wschars:
-                return ''
-        except IndexError:
-            return ''
-        self._source = self._source.lstrip()
+        if self._length > self._index:
+            ch = self._source[self._index]
+        else:
+            return False
+
+        while ch in wschars:
+            self._index += 1
+            if self._length > self._index:
+                ch = self._source[self._index]
+            else:
+                break
 
     def getRequiredWS(self, wschars=string.whitespace):
-        try:
-            if self._source[0] not in wschars:
-                return ''
-        except IndexError:
-            return ''
-        content = self._source.lstrip()
-        ws = self._source[:len(content)*-1 or None]
-        self._source = content
-        return True if ws else False
+        if self._length > self._index:
+            ch = self._source[self._index]
+        else:
+            return False
+
+        ws = False
+        while ch in wschars:
+            ws = True
+            self._index += 1
+            if self._length > self._index:
+                ch = self._source[self._index]
+            else:
+                break
+
+        return ws
 
     def getIdentifier(self):
         index = self._index
         start = index
         source = self._source
         l = len(source)
-        cc = ord(source[start])
+        if index < l:
+            cc = ord(source[start])
+        else:
+            cc = -1
 
         if (cc < 97 or cc > 122) and \
            (cc < 65 or cc > 90) and \
@@ -104,18 +159,21 @@ class Parser():
         if not self.getRequiredWS():
             raise self.error('Expected white space')
 
-        ch = self._source[self._index]
+        if self._length > self._index:
+            ch = self._source[self._index]
+        else:
+            ch = None
         value = self.getValue(True, ch)
         attrs = []
         if value is None:
             if ch == '>':
-                raise Exception()
+                raise self.error('Expected ">"')
             attrs = self.getAttributes()
         else:
             ws1 = self.getRequiredWS()
             if not self._source[self._index] == '>':
                 if not ws1:
-                    raise Exception()
+                    raise self.error('Expected ">"')
                 attrs = self.getAttributes()
 
         self._index += 1
@@ -134,7 +192,10 @@ class Parser():
         if cc == '<':
             self._index += 1
             id = self.getIdentifier()
-            cc = self._source[self._index]
+            if self._index > self._length:
+                cc = self._source[self._index]
+            else:
+                cc = None
 
             if cc == '(':
                 return self.getMacro()
@@ -143,6 +204,7 @@ class Parser():
                 return self.getEntity(id,
                                       self.getItemList(self.getExpression, ']'))
             return self.getEntity(id, [])
+        raise self.error('Invalid entry')
 
     def getLOLPlain(self):
         entries = []
@@ -159,6 +221,99 @@ class Parser():
         }
 
     getLOL = getLOLPlain
+
+    def getExpression(self):
+        return self.getConditionalExpression()
+
+    def getPrefixExpression(self, token, cl, op, nxt):
+        exp = nxt()
+
+        while True:
+            t = ''
+            self.getWS()
+            ch = self._source[self._index]
+            if ch not in token[0]:
+                break
+            t += ch
+            self._index += 1
+            if len(token) > 1:
+                pass
+            self.getWS()
+            exp = {
+                'type': cl,
+                'operator': {
+                    'type': op,
+                    'token': t
+                },
+                'left': exp,
+                'right': nxt()
+            }
+        return exp
+
+    def getConditionalExpression(self):
+        exp = self.getAdditiveExpression()
+        self.getWS()
+        if ord(self._source[self._index]) != 63:
+            return exp
+        self._index += 1
+        self.getWS()
+        consequent = self.getExpression()
+        self.getWS()
+        if ord(self._source[self._index]) != 58:
+            raise self.error('Expected ":"')
+        self._index += 1
+        self.getWS()
+        return {
+            'type': 'ConditionalExpression',
+            'test': exp,
+            'consequent': consequent,
+            'alternate': self.getExpression()
+        }
+
+    def getAdditiveExpression(self):
+        return self.getPrefixExpression([['+', '-']],
+                                        'BinaryExpression',
+                                        'BinaryOperator',
+                                        self.getPrimaryExpression)
+
+    def getPrimaryExpression(self):
+        pos = self._index
+        cc = ord(self._source[pos])
+
+        while cc > 47 and cc < 58:
+            pos += 1
+            cc = ord(self._source[pos])
+        if pos > self._index:
+            start = self._index
+            self._index = pos
+            return {
+                'type': 'Number',
+                'value': int(self._source[start: pos])
+            }
+
+        if cc in [39, 34, 123, 91]:
+            return self.getValue()
+
+    def getItemList(self, callback, closeChar):
+        self.getWS()
+        if self._source[self._index] == closeChar:
+            self._index += 1
+            return []
+        items = []
+
+        while True:
+            items.append(callback())
+            self.getWS()
+            ch = self._source[self._index]
+            if ch == ',':
+                self._index += 1
+                self.getWS()
+            elif ch == closeChar:
+                self._index += 1
+                break
+            else:
+                raise self.error('Expected "," or "%s"' % closeChar)
+        return items
 
     def error(self, message, pos=None):
         if pos is None:
