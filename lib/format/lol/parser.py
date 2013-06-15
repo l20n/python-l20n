@@ -11,21 +11,14 @@ class Parser():
 
     def getString(self, opchar):
         l = len(opchar)
-        print(self._source[self._index:])
         self._index += l
         start = self._index
         
         close = self._source.find(opchar, start)
-        print(self._source[start:])
-        print(opchar)
-        print(close)
-        print(self._source[close - 1])
-        print(self._source[close-2])
         while close != -1 and \
               ord(self._source[close - 1]) == 92 and \
               ord(self._source[close - 2]) != 92:
-            close = self._source.find(opchar, close + l)
-        print(close)
+            close = self._source.find(opchar, close + 1)
         if close == -1:
             raise Exception()
         s = self._source[start:close]
