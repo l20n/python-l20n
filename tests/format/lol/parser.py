@@ -189,7 +189,6 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(val['content'][0]['value']['content'], "2")
         self.assertEqual(val['content'][1]['value']['content'], "3")
 
-class Foo:
     def test_nested_hash_value(self):
         string = "<id {a: {}, b: { }}>"
         lol = self.parser.parse(string)
@@ -198,15 +197,14 @@ class Foo:
         self.assertEqual(len(val['content']), 2)
         self.assertEqual(len(val['content'][0]['value']['content']), 0)
 
-        string = "<id {a: 'foo', b: ['foo2', 'foo3'], c: {a2: 'p'}}>"
+        string = "<id {a: 'foo', b: {a2: 'p'}}>"
         lol = self.parser.parse(string)
         self.assertEqual(len(lol['body']), 1)
         val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 3)
+        self.assertEqual(len(val['content']), 2)
         self.assertEqual(val['content'][0]['value']['content'], 'foo')
-        self.assertEqual(val['content'][1]['value']['content'][0]['content'], 'foo2')
-        self.assertEqual(val['content'][2]['value']['content'][0]['key']['name'], 'a2')
-        self.assertEqual(val['content'][2]['value']['content'][0]['value']['content'], 'p')
+        self.assertEqual(val['content'][1]['value']['content'][0]['key']['name'], 'a2')
+        self.assertEqual(val['content'][1]['value']['content'][0]['value']['content'], 'p')
 
     def test_hash_errors(self):
         strings = [
@@ -229,17 +227,17 @@ class Foo:
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
     def test_index(self):
-        string = "<id[]>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        self.assertEqual(len(lol['body'][0]['index']), 0)
-        self.assertEqual(lol['body'][0]['value'], None)
+        #string = "<id[]>"
+        #lol = self.parser.parse(string)
+        #self.assertEqual(len(lol['body']), 1)
+        #self.assertEqual(len(lol['body'][0]['index']), 0)
+        #self.assertEqual(lol['body'][0]['value'], None)
 
-        string = "<id[ ] >"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        self.assertEqual(len(lol['body'][0]['index']), 0)
-        self.assertEqual(lol['body'][0]['value'], None)
+        #string = "<id[ ] >"
+        #lol = self.parser.parse(string)
+        #self.assertEqual(len(lol['body']), 1)
+        #self.assertEqual(len(lol['body'][0]['index']), 0)
+        #self.assertEqual(lol['body'][0]['value'], None)
         
         string = "<id['foo'] 'foo2'>"
         lol = self.parser.parse(string)
@@ -282,15 +280,16 @@ class Foo:
         string = "<id($n) {2}>"
         lol = self.parser.parse(string)
         self.assertEqual(len(lol['body']), 1)
-        self.assertEqual(len(lol['body'][0].args), 1)
-        self.assertEqual(lol['body'][0].expression['value'], 2)
+        self.assertEqual(len(lol['body'][0]['args']), 1)
+        self.assertEqual(lol['body'][0]['expression']['value'], 2)
 
         string = "<id( $n, $m, $a ) {2}  >"
         lol = self.parser.parse(string)
         self.assertEqual(len(lol['body']), 1)
-        self.assertEqual(len(lol['body'][0].args), 3)
-        self.assertEqual(lol['body'][0].expression['value'], 2)
+        self.assertEqual(len(lol['body'][0]['args']), 3)
+        self.assertEqual(lol['body'][0]['expression']['value'], 2)
 
+class Foo:
     def test_macro_errors(self):
         strings = [
             '<id (n) {2}>',

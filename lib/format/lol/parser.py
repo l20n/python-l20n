@@ -97,7 +97,7 @@ class Parser():
                 self._index += 1
                 break
             if not comma:
-                raise rrror('Expected "}"')
+                raise self.error('Expected "}"')
         return {
             'type': 'Hash',
             'content': hash
@@ -177,6 +177,13 @@ class Parser():
 
         return ws
 
+    def getVariable(self):
+        self._index += 1
+        return {
+            'type': 'VariableExpression',
+            'id': self.getIdentifier()
+        }
+
     def getIdentifier(self):
         index = self._index
         start = index
@@ -206,6 +213,33 @@ class Parser():
         return {
             'type': 'Identifier',
             'name': source[start:index]
+        }
+
+    def getMacro(self, id):
+        if id['name'][0] == '_':
+            raise error('Macro ID cannot start with "_"')
+        self._index += 1
+        idlist = self.getItemList(self.getVariable, ')')
+        self.getRequiredWS()
+
+        if self._source[self._index] != '{':
+            raise self.error('Expected "{"')
+        self._index += 1
+        self.getWS()
+        exp = self.getExpression()
+        self.getWS()
+        if self._source[self._index] != '}':
+            raise self.error('Expected "}"')
+        self._index += 1
+        self.getWS()
+        if ord(self._source[self._index]) != 62:
+            raise self.error('Expected ">"')
+        self._index += 1
+        return {
+            'type': 'Macro',
+            'id': id,
+            'args': idlist,
+            'expression': exp
         }
 
     def getEntity(self, id, index):
@@ -240,19 +274,19 @@ class Parser():
         }
 
     def getEntry(self):
-        cc = self._source[self._index]
+        cc = ord(self._source[self._index])
 
-        if cc == '<':
+        if cc == 60:
             self._index += 1
             id = self.getIdentifier()
-            if self._index > self._length:
-                cc = self._source[self._index]
+            if self._index < self._length:
+                cc = ord(self._source[self._index])
             else:
                 cc = None
 
-            if cc == '(':
-                return self.getMacro()
-            if cc == '[':
+            if cc == 40:
+                return self.getMacro(id)
+            if cc == 91:
                 self._index += 1
                 return self.getEntity(id,
                                       self.getItemList(self.getExpression, ']'))
