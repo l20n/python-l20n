@@ -217,22 +217,36 @@ class Parser():
 
     def getMacro(self, id):
         if id['name'][0] == '_':
-            raise error('Macro ID cannot start with "_"')
+            raise self.error('Macro ID cannot start with "_"')
         self._index += 1
         idlist = self.getItemList(self.getVariable, ')')
         self.getRequiredWS()
 
-        if self._source[self._index] != '{':
+        if self._index < self._length:
+            ch = self._source[self._index]
+        else:
+            ch = None
+        if ch != '{':
             raise self.error('Expected "{"')
         self._index += 1
         self.getWS()
         exp = self.getExpression()
         self.getWS()
-        if self._source[self._index] != '}':
+        
+        if self._index < self._length:
+            ch = self._source[self._index]
+        else:
+            ch = None
+        if ch != '}':
             raise self.error('Expected "}"')
         self._index += 1
         self.getWS()
-        if ord(self._source[self._index]) != 62:
+
+        if self._index < self._length:
+            cc = ord(self._source[self._index])
+        else:
+            cc = -1
+        if cc != 62:
             raise self.error('Expected ">"')
         self._index += 1
         return {
@@ -318,13 +332,25 @@ class Parser():
         while True:
             t = ''
             self.getWS()
-            ch = self._source[self._index]
+            if self._index < self._length:
+                ch = self._source[self._index]
+            else:
+                ch = None
             if ch not in token[0]:
                 break
             t += ch
             self._index += 1
             if len(token) > 1:
-                pass
+                if self._index < self._length:
+                    ch = self._source[self._index]
+                else:
+                    ch = None
+                if token[1] == ch:
+                    self._index += 1
+                    t += ch
+                elif token[2]:
+                    self._index -= 1
+                    return exp
             self.getWS()
             exp = {
                 'type': cl,
@@ -337,10 +363,32 @@ class Parser():
             }
         return exp
 
-    def getConditionalExpression(self):
-        exp = self.getAdditiveExpression()
+    def getPostfixExpression(self, token, cl, op, nxt):
+        if self._index < self._length:
+            cc = ord(self._source[self._index])
+        else:
+            cc = -1
+        if cc not in token:
+            return nxt()
+        self._index += 1
         self.getWS()
-        if ord(self._source[self._index]) != 63:
+        return {
+            'type': cl,
+            'operator': {
+                'type': op,
+                'token': chr(cc)
+            },
+            'argument': self.getPostfixExpression(token, cl, op, nxt)
+        }
+
+    def getConditionalExpression(self):
+        exp = self.getOrExpression()
+        self.getWS()
+        if self._index < self._length:
+            cc = ord(self._source[self._index])
+        else:
+            cc = -1
+        if cc != 63:
             return exp
         self._index += 1
         self.getWS()
@@ -357,19 +405,147 @@ class Parser():
             'alternate': self.getExpression()
         }
 
+    def getOrExpression(self):
+        return self.getPrefixExpression([['|'], '|', True],
+                                        'LogicalExpression',
+                                        'LogicalOperator',
+                                        self.getAddExpression)
+
+    def getAddExpression(self):
+        return self.getPrefixExpression([['&'], '&', True],
+                                        'LogicalExpression',
+                                        'LogicalOperator',
+                                        self.getEqualityExpression)
+
+    def getEqualityExpression(self):
+        return self.getPrefixExpression([['='], '=', True],
+                                        'BinaryExpression',
+                                        'BinaryOperator',
+                                        self.getRelationalExpression)
+
+    def getRelationalExpression(self):
+        return self.getPrefixExpression([['<', '>'], '=', False],
+                                        'BinaryExpression',
+                                        'BinaryOperator',
+                                        self.getAdditiveExpression)
+
     def getAdditiveExpression(self):
         return self.getPrefixExpression([['+', '-']],
                                         'BinaryExpression',
                                         'BinaryOperator',
-                                        self.getPrimaryExpression)
+                                        self.getModuloExpression)
+
+    def getModuloExpression(self):
+        return self.getPrefixExpression([['%']],
+                                        'BinaryExpression',
+                                        'BinaryOperator',
+                                        self.getMultiplicativeExpression)
+
+    def getMultiplicativeExpression(self):
+        return self.getPrefixExpression([['*']],
+                                        'BinaryExpression',
+                                        'BinaryOperator',
+                                        self.getDividiveExpression)
+
+    def getDividiveExpression(self):
+        return self.getPrefixExpression([['/']],
+                                        'BinaryExpression',
+                                        'BinaryOperator',
+                                        self.getUnaryExpression)
+
+    def getUnaryExpression(self):
+        return self.getPostfixExpression([43, 45, 33], # + - !
+                                        'UnaryExpression',
+                                        'UnaryOperator',
+                                        self.getMemberExpression)
+
+    def getCallExpression(self, callee):
+        self.getWS()
+        return {
+            'type': 'CallExpression',
+            'callee': callee,
+            'arguments': self.getItemList(self.getExpression, ')')
+        }
+
+    def getPropertyExpression(self, idref, computed):
+        if computed:
+            self.getWS()
+            exp = self.getExpression()
+            self.getWS()
+            if self._source[self._index] != ']':
+                raise self.error('Expected "]"')
+            self._index += 1
+            return {
+                'type': 'PropertyExpression',
+                'expression': idref,
+                'property': exp,
+                'computed': True
+            }
+        exp = self.getIdentifier()
+        return {
+            'type': 'PropertyExpression',
+            'expression': idref,
+            'property': exp,
+            'computed': False
+        }
+
+    def getMemberExpression(self):
+        exp = self.getParenthesisExpression()
+
+        while True:
+            if self._index < self._length:
+                cc = ord(self._source[self._index])
+            else:
+                cc = -1
+            if cc == 46 or cc == 91:
+                self._index += 1
+                exp = self.getPropertyExpression(exp, cc == 91)
+            elif cc == 58 and ord(self._source[self._index + 1]) == 58:
+                self._index += 2
+                if ord(self._source[self._index]) == 91:
+                    self._index += 1
+                    exp = self.getAttributeExpression(exp, True)
+                else:
+                    exp = self.getAttributeExpression(exp, False)
+            elif cc == 40:
+                self._index += 1
+                exp = self.getCallExpression(exp)
+            else:
+                break
+        return exp
+
+    def getParenthesisExpression(self):
+        if self._index < self._length:
+            cc = ord(self._source[self._index])
+        else:
+            cc = -1
+        if cc == 40:
+            self._index += 1
+            self.getWS()
+            pexp = {
+                'type': 'ParenthesisExpression',
+                'expression': self.getExpression()
+            }
+            self.getWS()
+            if ord(self._source[self._index]) != 41:
+                raise self.error('Expected ")"')
+            self._index += 1
+            return pexp
+        return self.getPrimaryExpression()
 
     def getPrimaryExpression(self):
         pos = self._index
-        cc = ord(self._source[pos])
+        if pos < self._length:
+            cc = ord(self._source[pos])
+        else:
+            cc = -1
 
         while cc > 47 and cc < 58:
             pos += 1
-            cc = ord(self._source[pos])
+            if pos < self._length:
+                cc = ord(self._source[pos])
+            else:
+                cc = -1
         if pos > self._index:
             start = self._index
             self._index = pos
@@ -381,6 +557,24 @@ class Parser():
         if cc in [39, 34, 123, 91]:
             return self.getValue()
 
+        if cc == 36:
+            return self.getVariable()
+
+        if cc == 64:
+            self._index += 1
+            return {
+                'type': 'GlobalExpression',
+                'id': self.getIdentifier()
+            }
+
+        if cc == 126:
+            self._index += 1
+            return {
+                'type': 'ThisExpression'
+            }
+
+        return self.getIdentifier()
+
     def getItemList(self, callback, closeChar):
         self.getWS()
         if self._source[self._index] == closeChar:
@@ -391,7 +585,10 @@ class Parser():
         while True:
             items.append(callback())
             self.getWS()
-            ch = self._source[self._index]
+            if self._index < self._length:
+                ch = self._source[self._index]
+            else:
+                ch = None
             if ch == ',':
                 self._index += 1
                 self.getWS()

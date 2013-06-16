@@ -289,7 +289,6 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(len(lol['body'][0]['args']), 3)
         self.assertEqual(lol['body'][0]['expression']['value'], 2)
 
-class Foo:
     def test_macro_errors(self):
         strings = [
             '<id (n) {2}>',
@@ -304,8 +303,17 @@ class Foo:
             '<id("a") {2}>',
             '<id(\'a\') {2}>',
             '<id(2) {2}>',
+            '<_id($n) {2}>',
+            '<id($n) 2}>',
+            '<id($n',
+            '<id($n ',
+            '<id($n)',
+            '<id($n) ',
+            '<id($n) {',
+            '<id($n) { ',
+            '<id($n) {2',
+            '<id($n) {2}',
             '<id(nm nm) {2}>',
-
         ]
         for string in strings:
             try:
@@ -317,89 +325,89 @@ class Foo:
         string = "<id[0 == 1 || 1] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '||')
-        self.assertEqual(exp.left.operator.token, '==')
+        self.assertEqual(exp['operator']['token'], '||')
+        self.assertEqual(exp['left']['operator']['token'], '==')
 
         string = "<id[a == b == c] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '==')
-        self.assertEqual(exp.left.operator.token, '==')
+        self.assertEqual(exp['operator']['token'], '==')
+        self.assertEqual(exp['left']['operator']['token'], '==')
 
         string = "<id[ a == b || c == d || e == f ] 'foo'  >"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '||')
-        self.assertEqual(exp.left.operator.token, '||')
-        self.assertEqual(exp.right.operator.token, '==')
+        self.assertEqual(exp['operator']['token'], '||')
+        self.assertEqual(exp['left']['operator']['token'], '||')
+        self.assertEqual(exp['right']['operator']['token'], '==')
 
         string = "<id[0 && 1 || 1] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '||')
-        self.assertEqual(exp.left.operator.token, '&&')
+        self.assertEqual(exp['operator']['token'], '||')
+        self.assertEqual(exp['left']['operator']['token'], '&&')
 
         string = "<id[0 && (1 || 1)] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '&&')
-        self.assertEqual(exp.right.expression.operator.token, '||')
+        self.assertEqual(exp['operator']['token'], '&&')
+        self.assertEqual(exp['right']['expression']['operator']['token'], '||')
 
         string = "<id[1 || 1 && 0] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '||')
-        self.assertEqual(exp.right.operator.token, '&&')
+        self.assertEqual(exp['operator']['token'], '||')
+        self.assertEqual(exp['right']['operator']['token'], '&&')
 
         string = "<id[1 + 2] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '+')
-        self.assertEqual(exp.left['value'], 1)
-        self.assertEqual(exp.right['value'], 2)
+        self.assertEqual(exp['operator']['token'], '+')
+        self.assertEqual(exp['left']['value'], 1)
+        self.assertEqual(exp['right']['value'], 2)
 
         string = "<id[1 + 2 - 3 > 4 < 5 <= a >= 'd' * 3 / q % 10] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '>=')
+        self.assertEqual(exp['operator']['token'], '>=')
 
         string = "<id[! +1] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '!')
-        self.assertEqual(exp.argument.operator.token, '+')
-        self.assertEqual(exp.argument.argument['value'], 1)
+        self.assertEqual(exp['operator']['token'], '!')
+        self.assertEqual(exp['argument']['operator']['token'], '+')
+        self.assertEqual(exp['argument']['argument']['value'], 1)
 
 
         string = "<id[1+2] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '+')
-        self.assertEqual(exp.left['value'], 1)
-        self.assertEqual(exp.right['value'], 2)
+        self.assertEqual(exp['operator']['token'], '+')
+        self.assertEqual(exp['left']['value'], 1)
+        self.assertEqual(exp['right']['value'], 2)
 
         string = "<id[(1+2)] 'foo'>"
         lol = self.parser.parse(string)
-        exp = lol['body'][0]['index'][0].expression
-        self.assertEqual(exp.operator.token, '+')
-        self.assertEqual(exp.left['value'], 1)
-        self.assertEqual(exp.right['value'], 2)
+        exp = lol['body'][0]['index'][0]['expression']
+        self.assertEqual(exp['operator']['token'], '+')
+        self.assertEqual(exp['left']['value'], 1)
+        self.assertEqual(exp['right']['value'], 2)
 
         string = "<id[id2['foo']] 'foo2'>"
         lol = self.parser.parse(string)
         self.assertEqual(len(lol['body']), 1)
         exp = lol['body'][0]['index'][0]
         self.assertEqual(lol['body'][0]['value']['content'], 'foo2')
-        self.assertEqual(exp.expression['name'], 'id2')
-        self.assertEqual(exp.property['content'] , 'foo')
+        self.assertEqual(exp['expression']['name'], 'id2')
+        self.assertEqual(exp['property']['content'] , 'foo')
 
-        string = "<id[id['foo']]>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        exp = lol['body'][0]['index'][0]
-        self.assertEqual(lol['body'][0]['value'], None)
-        self.assertEqual(exp.expression['name'], 'id')
-        self.assertEqual(exp.property['content'] , 'foo')
+        #string = "<id[id['foo']]>"
+        #lol = self.parser.parse(string)
+        #self.assertEqual(len(lol['body']), 1)
+        #exp = lol['body'][0]['index'][0]
+        #self.assertEqual(lol['body'][0]['value'], None)
+        #self.assertEqual(exp['expression']['name'], 'id')
+        #self.assertEqual(exp['property']['content'] , 'foo')
 
     def test_expression_errors(self):
         strings = [
@@ -424,20 +432,20 @@ class Foo:
         string = "<id[0 || 1] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '||')
-        self.assertEqual(exp.left['value'], 0)
-        self.assertEqual(exp.right['value'], 1)
+        self.assertEqual(exp['operator']['token'], '||')
+        self.assertEqual(exp['left']['value'], 0)
+        self.assertEqual(exp['right']['value'], 1)
 
         string = "<id[0 || 1 && 2 || 3] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '||')
-        self.assertEqual(exp.left.operator.token, '||')
-        self.assertEqual(exp.right['value'], 3)
-        self.assertEqual(exp.left.left['value'], 0)
-        self.assertEqual(exp.left.right.left['value'], 1)
-        self.assertEqual(exp.left.right.right['value'], 2)
-        self.assertEqual(exp.left.right.operator.token, '&&')
+        self.assertEqual(exp['operator']['token'], '||')
+        self.assertEqual(exp['left']['operator']['token'], '||')
+        self.assertEqual(exp['right']['value'], 3)
+        self.assertEqual(exp['left']['left']['value'], 0)
+        self.assertEqual(exp['left']['right']['left']['value'], 1)
+        self.assertEqual(exp['left']['right']['right']['value'], 2)
+        self.assertEqual(exp['left']['right']['operator']['token'], '&&')
 
     def test_logical_expression_errors(self):
         strings = [
@@ -453,44 +461,44 @@ class Foo:
             except AssertionError:
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
-
+class Foo:
     def test_binary_expression(self):
         #from pudb import set_trace; set_trace()
         string = "<id[a / b * c] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '*')
-        self.assertEqual(exp.left.operator.token, '/')
+        self.assertEqual(exp['operator']['token'], '*')
+        self.assertEqual(exp['left']['operator']['token'], '/')
 
         string = "<id[8 * 9 % 11] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '%')
-        self.assertEqual(exp.left.operator.token, '*')
+        self.assertEqual(exp['operator']['token'], '%')
+        self.assertEqual(exp['left']['operator']['token'], '*')
 
         string = "<id[6 + 7 - 8 * 9 / 10 % 11] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '-')
-        self.assertEqual(exp.left.operator.token, '+')
-        self.assertEqual(exp.right.operator.token, '%')
+        self.assertEqual(exp['operator']['token'], '-')
+        self.assertEqual(exp['left']['operator']['token'], '+')
+        self.assertEqual(exp['right']['operator']['token'], '%')
 
 
         string = "<id[0 == 1 != 2 > 3 < 4 >= 5 <= 6 + 7 - 8 * 9 / 10 % 11] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '!=')
-        self.assertEqual(exp.left.operator.token, '==')
-        self.assertEqual(exp.right.operator.token, '<=')
-        self.assertEqual(exp.right.left.operator.token, '>=')
-        self.assertEqual(exp.right.right.operator.token, '-')
-        self.assertEqual(exp.right.left.left.operator.token, '<')
-        self.assertEqual(exp.right.left.right['value'], 5)
-        self.assertEqual(exp.right.left.left.left.operator.token, '>')
-        self.assertEqual(exp.right.right.left.operator.token, '+')
-        self.assertEqual(exp.right.right.right.operator.token, '%')
-        self.assertEqual(exp.right.right.right.left.operator.token, '*')
-        self.assertEqual(exp.right.right.right.left.right.operator.token, '/')
+        self.assertEqual(exp['operator']['token'], '!=')
+        self.assertEqual(exp['left']['operator']['token'], '==')
+        self.assertEqual(exp['right']['operator']['token'], '<=')
+        self.assertEqual(exp['right']['left']['operator']['token'], '>=')
+        self.assertEqual(exp['right']['right']['operator']['token'], '-')
+        self.assertEqual(exp['right']['left']['left']['operator']['token'], '<')
+        self.assertEqual(exp['right']['left']['right']['value'], 5)
+        self.assertEqual(exp['right']['left']['left']['left']['operator']['token'], '>')
+        self.assertEqual(exp['right']['right']['left']['operator']['token'], '+')
+        self.assertEqual(exp['right']['right']['right']['operator']['token'], '%')
+        self.assertEqual(exp['right']['right']['right']['left']['operator']['token'], '*')
+        self.assertEqual(exp['right']['right']['right']['left']['right']['operator']['token'], '/')
 
     def test_binary_expression_errors(self):
         strings = [
@@ -516,9 +524,9 @@ class Foo:
         string = "<id[! + - 1] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '!')
-        self.assertEqual(exp.argument.operator.token, '+')
-        self.assertEqual(exp.argument.argument.operator.token, '-')
+        self.assertEqual(exp['operator']['token'], '!')
+        self.assertEqual(exp['argument']['operator']['token'], '+')
+        self.assertEqual(exp['argument']['argument']['operator']['token'], '-')
 
     def test_unary_expression_errors(self):
         strings = [
@@ -536,17 +544,17 @@ class Foo:
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
         self.assertEqual(exp.callee['name'], 'foo')
-        self.assertEqual(len(exp.arguments), 0)
+        self.assertEqual(len(exp['arguments']), 0)
 
         string = "<id[foo(d, e, f, g)] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
         self.assertEqual(exp.callee['name'], 'foo')
-        self.assertEqual(len(exp.arguments), 4)
-        self.assertEqual(exp.arguments[0]['name'], 'd')
-        self.assertEqual(exp.arguments[1]['name'], 'e')
-        self.assertEqual(exp.arguments[2]['name'], 'f')
-        self.assertEqual(exp.arguments[3]['name'], 'g')
+        self.assertEqual(len(exp['arguments']), 4)
+        self.assertEqual(exp['arguments'][0]['name'], 'd')
+        self.assertEqual(exp['arguments'][1]['name'], 'e')
+        self.assertEqual(exp['arguments'][2]['name'], 'f')
+        self.assertEqual(exp['arguments'][3]['name'], 'g')
 
     def test_call_expression_errors(self):
         strings = [
@@ -568,20 +576,20 @@ class Foo:
         string = "<id[x['d']] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.expression['name'], 'x')
-        self.assertEqual(exp.property['content'], 'd')
+        self.assertEqual(exp['expression']['name'], 'x')
+        self.assertEqual(exp['property']['content'], 'd')
 
         string = "<id[x.d] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.expression['name'], 'x')
-        self.assertEqual(exp.property['name'], 'd')
+        self.assertEqual(exp['expression']['name'], 'x')
+        self.assertEqual(exp['property']['name'], 'd')
 
         string = "<id[a||b.c] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '||')
-        self.assertEqual(exp.right.expression['name'], 'b')
+        self.assertEqual(exp['operator']['token'], '||')
+        self.assertEqual(exp['right']['expression']['name'], 'b')
 
         string = "<id[ x.d ] 'foo' >"
         lol = self.parser.parse(string)
@@ -613,13 +621,13 @@ class Foo:
         string = "<id[x.['d']] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.expression['name'], 'x')
+        self.assertEqual(exp['expression']['name'], 'x')
         self.assertEqual(exp.attribute['content'], 'd')
 
         string = "<id[x..d] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.expression['name'], 'x')
+        self.assertEqual(exp['expression']['name'], 'x')
         self.assertEqual(exp.attribute['name'], 'd')
 
     def test_attr_expression_errors(self):
@@ -645,34 +653,34 @@ class Foo:
         string = "<id[(1 + 2) * 3] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '*')
-        self.assertEqual(exp.left.expression.operator.token, '+')
+        self.assertEqual(exp['operator']['token'], '*')
+        self.assertEqual(exp['left']['expression']['operator']['token'], '+')
 
         string = "<id[(1) + ((2))] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '+')
-        self.assertEqual(exp.left.expression['value'], 1)
-        self.assertEqual(exp.right.expression.expression['value'], 2)
+        self.assertEqual(exp['operator']['token'], '+')
+        self.assertEqual(exp['left']['expression']['value'], 1)
+        self.assertEqual(exp['right']['expression']['expression']['value'], 2)
 
         string = "<id[(a||b).c] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.expression.expression.operator.token, '||')
-        self.assertEqual(exp.property['name'], 'c')
+        self.assertEqual(exp['expression']['expression']['operator']['token'], '||')
+        self.assertEqual(exp['property']['name'], 'c')
 
         string = "<id[!(a||b).c] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.operator.token, '!')
-        self.assertEqual(exp.argument.expression.expression.operator.token, '||')
-        self.assertEqual(exp.argument.property['name'], 'c')
+        self.assertEqual(exp['operator']['token'], '!')
+        self.assertEqual(exp['argument']['expression']['expression']['operator']['token'], '||')
+        self.assertEqual(exp['argument']['property']['name'], 'c')
 
         string = "<id[a().c] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.expression.callee['name'], 'a')
-        self.assertEqual(exp.property['name'], 'c')
+        self.assertEqual(exp['expression'].callee['name'], 'a')
+        self.assertEqual(exp['property']['name'], 'c')
 
     def test_parenthesis_expression_errors(self):
         strings = [
