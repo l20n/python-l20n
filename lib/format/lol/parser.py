@@ -31,6 +31,19 @@ class Parser():
                 raise self.error('Expected ">"')
         return attrs
 
+    def getKVP(self, type):
+        key = self.getIdentifier()
+        self.getWS()
+        if self._source[self._index] != ':':
+            raise self.error('Expected ":"')
+        self._index += 1
+        self.getWS()
+        return {
+            'type': type,
+            'key': key,
+            'value': self.getValue()
+        }
+
     def getKVPWithIndex(self, type=None):
         key = self.getIdentifier()
         index = []
@@ -49,6 +62,45 @@ class Parser():
             'key': key,
             'value': self.getValue(),
             'index': index
+        }
+
+    def getHash(self):
+        self._index += 1
+        self.getWS()
+        if self._source[self._index] == '}':
+            self._index += 1
+            return {
+                'type': 'Hash',
+                'content': []
+            }
+
+        hasDefItem = False
+        hash = []
+        while True:
+            defItem = False
+            if self._source[self._index] == '*':
+                self._index += 1
+                if hasDefItem:
+                    raise error('Default item redefinition forbidden')
+                defItem = True
+                hasDefItem = True
+            hi = self.getKVP('HashItem')
+            hi['default'] = defItem
+            hash.append(hi)
+            self.getWS()
+
+            comma = self._source[self._index] == ','
+            if comma:
+                self._index += 1
+                self.getWS()
+            if self._source[self._index] == '}':
+                self._index += 1
+                break
+            if not comma:
+                raise rrror('Expected "}"')
+        return {
+            'type': 'Hash',
+            'content': hash
         }
 
     def getString(self, opchar):
@@ -89,7 +141,8 @@ class Parser():
                ch == self._source[self._index + 2]:
                 return self.getString(ch*3)
             return self.getString(ch)
-
+        if ch == '{':
+            return self.getHash()
         if not optional:
             raise self.error('Unknown value type')
         return None

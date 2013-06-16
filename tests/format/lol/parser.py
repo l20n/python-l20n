@@ -167,79 +167,6 @@ class L20nParserTestCase(unittest.TestCase):
             except AssertionError:
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
-class Foo:
-    def test_array_value(self):
-        string = "<id []>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 0)
-
-        string = "<id ['foo']>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 1)
-        self.assertEqual(val['content'][0]['content'], "foo")
-
-        string = "<id ['foo', 'foo2', 'foo3']  \t>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 3)
-        self.assertEqual(val['content'][0]['content'], "foo")
-        self.assertEqual(val['content'][1]['content'], "foo2")
-        self.assertEqual(val['content'][2]['content'], "foo3")
-
-    def test_nested_array_value(self):
-        string = "<id [[], [  ]]>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 2)
-        self.assertEqual(len(val['content'][0]['content']), 0)
-
-        string = "<id ['foo', ['foo2', 'foo3']]>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 2)
-        self.assertEqual(val['content'][0]['content'], 'foo')
-        self.assertEqual(val['content'][1]['content'][0]['content'], 'foo2')
-        self.assertEqual(val['content'][1]['content'][1]['content'], 'foo3')
-
-        string = "<id ['foo', ['foo2', 'foo3' ]  ]>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 2)
-        self.assertEqual(val['content'][0]['content'], 'foo')
-        self.assertEqual(val['content'][1]['content'][0]['content'], 'foo2')
-        self.assertEqual(val['content'][1]['content'][1]['content'], 'foo3')
-
-    def test_array_errors(self):
-        strings = [
-            '<id ["foo]>',
-            "<id [do]>",
-            "<id [['foo']>",
-            "<id [2]]>",
-            "<id ['foo'>",
-            "<id ['foo]'>",
-            "<id '[2'",
-            "<id ['[']']>",
-            "<id ['f'][][>",
-            "<id ['f']['f']>",
-            "<id [2, 3]>",
-            "<id ['f' 'f']>",
-            "<id ['f''f']>",
-            "<id [n?e]>",
-        ]
-        for string in strings:
-            try:
-                self.assertRaises(ParserError, self.parser.parse, string)
-            except AssertionError:
-                raise AssertionError("Failed to raise parser error on string: %s" % string)
-
     def test_hash_value(self):
         string = "<id {}>"
         lol = self.parser.parse(string)
@@ -262,6 +189,7 @@ class Foo:
         self.assertEqual(val['content'][0]['value']['content'], "2")
         self.assertEqual(val['content'][1]['value']['content'], "3")
 
+class Foo:
     def test_nested_hash_value(self):
         string = "<id {a: {}, b: { }}>"
         lol = self.parser.parse(string)
