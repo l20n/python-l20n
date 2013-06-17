@@ -17,6 +17,19 @@ class Parser():
 
         return self.getLOL()
 
+    def getComment(self):
+        self._index += 2
+        start = self._index
+        end = self._source.find('*/', start)
+
+        if end == -1:
+            raise self.error('Comment without closing tag')
+        self._index = end + 2
+        return {
+            'type': 'Comment',
+            'content': self._source[start:end]
+        }
+
     def getAttributes(self):
         attrs = []
         while True:
@@ -305,6 +318,12 @@ class Parser():
                 return self.getEntity(id,
                                       self.getItemList(self.getExpression, ']'))
             return self.getEntity(id, [])
+
+        if cc == 47 and ord(self._source[self._index + 1]) == 42:
+            return self.getComment()
+
+        if self._source[self._index:self._index+6] == 'import':
+            return self.getImportStatement()
         raise self.error('Invalid entry')
 
     def getLOLPlain(self):
@@ -465,6 +484,34 @@ class Parser():
             'type': 'CallExpression',
             'callee': callee,
             'arguments': self.getItemList(self.getExpression, ')')
+        }
+
+    def getAttributeExpression(self, idref, computed):
+        if idref['type'] not in ['ParenthesisExpression',
+                                 'CallExpression',
+                                 'Identifier',
+                                 'ThisExpression']:
+            raise self.error('AttributeExpression must have Identifier, This, Call or Parenthesis as left node')
+
+        if computed:
+            self.getWS()
+            exp = self.getExpression()
+            self.getWS()
+            if self._source[self._index] != ']':
+                raise self.error('Expected "]"')
+            self._index += 1
+            return {
+                'type': 'AttributeExpression',
+                'expression': idref,
+                'attribute': exp,
+                'computed': True
+            }
+        exp = self.getIdentifier()
+        return {
+            'type': 'AttributeExpression',
+            'expression': idref,
+            'attribute': exp,
+            'computed': False
         }
 
     def getPropertyExpression(self, idref, computed):
