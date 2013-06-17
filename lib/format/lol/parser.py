@@ -418,7 +418,7 @@ class Parser():
                                         self.getEqualityExpression)
 
     def getEqualityExpression(self):
-        return self.getPrefixExpression([['='], '=', True],
+        return self.getPrefixExpression([['=', '!'], '=', True],
                                         'BinaryExpression',
                                         'BinaryOperator',
                                         self.getRelationalExpression)
