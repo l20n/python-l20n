@@ -228,6 +228,22 @@ class Parser():
             'name': source[start:index]
         }
 
+    def getImportStatement(self):
+        self._index += 6
+        if self._source[self._index] != "(":
+            raise self.error('Expected "("')
+        self._index += 1
+        self.getWS()
+        uri = self.getString(self._source[self._index])
+        self.getWS()
+        if self._source[self._index] != ")":
+            raise self.error('Expected ")"')
+        self._index += 1
+        return {
+            'type': 'ImportStatement',
+            'uri': uri
+        }
+
     def getMacro(self, id):
         if id['name'][0] == '_':
             raise self.error('Macro ID cannot start with "_"')
