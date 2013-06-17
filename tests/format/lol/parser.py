@@ -461,7 +461,6 @@ class L20nParserTestCase(unittest.TestCase):
             except AssertionError:
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
-class Foo:
     def test_binary_expression(self):
         #from pudb import set_trace; set_trace()
         string = "<id[a / b * c] 'foo'>"
@@ -543,13 +542,13 @@ class Foo:
         string = "<id[foo()] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.callee['name'], 'foo')
+        self.assertEqual(exp['callee']['name'], 'foo')
         self.assertEqual(len(exp['arguments']), 0)
 
         string = "<id[foo(d, e, f, g)] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp.callee['name'], 'foo')
+        self.assertEqual(exp['callee']['name'], 'foo')
         self.assertEqual(len(exp['arguments']), 4)
         self.assertEqual(exp['arguments'][0]['name'], 'd')
         self.assertEqual(exp['arguments'][1]['name'], 'e')
@@ -618,17 +617,17 @@ class Foo:
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
     def test_attr_expression(self):
-        string = "<id[x.['d']] 'foo'>"
+        string = "<id[x::['d']] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
         self.assertEqual(exp['expression']['name'], 'x')
-        self.assertEqual(exp.attribute['content'], 'd')
+        self.assertEqual(exp['attribute']['content'], 'd')
 
-        string = "<id[x..d] 'foo'>"
+        string = "<id[x::d] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
         self.assertEqual(exp['expression']['name'], 'x')
-        self.assertEqual(exp.attribute['name'], 'd')
+        self.assertEqual(exp['attribute']['name'], 'd')
 
     def test_attr_expression_errors(self):
         strings = [
@@ -679,7 +678,7 @@ class Foo:
         string = "<id[a().c] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp['expression'].callee['name'], 'a')
+        self.assertEqual(exp['expression']['callee']['name'], 'a')
         self.assertEqual(exp['property']['name'], 'c')
 
     def test_parenthesis_expression_errors(self):
@@ -721,12 +720,6 @@ class Foo:
         exp = lol['body'][0]['index'][0]
         self.assertEqual(exp['content'], 'foo')
 
-        string = "<id[['foo', 'foo2']] 'foo'>"
-        lol = self.parser.parse(string)
-        exp = lol['body'][0]['index'][0]
-        self.assertEqual(exp['content'][0]['content'], 'foo')
-        self.assertEqual(exp['content'][1]['content'], 'foo2')
-
         string = "<id[{a: 'foo', b: 'foo2'}] 'foo'>"
         lol = self.parser.parse(string)
         exp = lol['body'][0]['index'][0]
@@ -750,7 +743,6 @@ class Foo:
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
     def test_comment(self):
-        #from pudb import set_trace; set_trace()
         string = "/* test */"
         lol = self.parser.parse(string)
         comment = lol['body'][0]
@@ -769,15 +761,22 @@ class Foo:
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
     def test_identifier(self):
-        string = "<id>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        self.assertEqual(lol['body'][0]['id']['name'], "id")
+        #string = "<id>"
+        #lol = self.parser.parse(string)
+        #self.assertEqual(len(lol['body']), 1)
+        #self.assertEqual(lol['body'][0]['id']['name'], "id")
 
-        string = "<ID>"
+        #string = "<ID>"
+        #lol = self.parser.parse(string)
+        #self.assertEqual(len(lol['body']), 1)
+        #self.assertEqual(lol['body'][0]['id']['name'], "ID")
+        pass
+
+    def test_import(self):
+        string = "import('./foo.lol')"
         lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        self.assertEqual(lol['body'][0]['id']['name'], "ID")
+        self.assertEqual(lol['body'][0]['type'], 'ImportStatement')
+        self.assertEqual(lol['body'][0]['uri']['content'], './foo.lol')
 
 if __name__ == '__main__':
     unittest.main()
