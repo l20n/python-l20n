@@ -504,10 +504,9 @@ class Parser():
 
     def getAttributeExpression(self, idref, computed):
         if idref['type'] not in ['ParenthesisExpression',
-                                 'CallExpression',
                                  'Identifier',
                                  'ThisExpression']:
-            raise self.error('AttributeExpression must have Identifier, This, Call or Parenthesis as left node')
+            raise self.error('AttributeExpression must have Identifier, This or Parenthesis as left node')
 
         if computed:
             self.getWS()

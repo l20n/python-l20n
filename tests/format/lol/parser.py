@@ -631,14 +631,16 @@ class L20nParserTestCase(unittest.TestCase):
 
     def test_attr_expression_errors(self):
         strings = [
-            '<id[x...d] "foo">',
-            '<id[x[."d"]] "foo">',
-            '<id[x[..d]] "foo">',
-            '<id[x..[d]] "foo">',
-            '<id[x.y..z] "foo">',
-            '<id[x..y..z] "foo">',
-            '<id[x.y.["z"]] "foo">',
-            '<id[x..y.["z"]] "foo">',
+              '<id[x:::d] "foo">',
+              '<id[x[::"d"]] "foo">',
+              '<id[x[::::d]] "foo">',
+              '<id[x:::[d]] "foo">',
+              '<id[x.y::z] "foo">',
+              '<id[x::y::z] "foo">',
+              '<id[x.y::["z"]] "foo">',
+              '<id[x::y::["z"]] "foo">',
+              '<id[x::[1 "foo">',
+              '<id[x()::attr1] "foo">',
         ]
         for string in strings:
             try:
