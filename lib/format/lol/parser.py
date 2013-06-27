@@ -212,7 +212,7 @@ class Parser():
            cc != 95:
             raise self.error('Identifier has to start with [a-zA-Z_]')
 
-        while (cc >= 95 and cc <= 122) or \
+        while (cc >= 97 and cc <= 122) or \
               (cc >= 65 and cc <= 90) or \
               (cc >= 48 and cc <= 57) or \
               cc == 95:

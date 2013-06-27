@@ -774,6 +774,19 @@ class L20nParserTestCase(unittest.TestCase):
         #self.assertEqual(lol['body'][0]['id']['name'], "ID")
         pass
 
+    def test_identifier_errors(self):
+        strings = [
+            '<i`d "foo">',
+            '<0d "foo">',
+            '<09 "foo">',
+            '<i!d "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on string: %s" % string)
+
     def test_import(self):
         string = "import('./foo.lol')"
         lol = self.parser.parse(string)
