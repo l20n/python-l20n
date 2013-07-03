@@ -189,6 +189,15 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(val['content'][0]['value']['content'], "2")
         self.assertEqual(val['content'][1]['value']['content'], "3")
 
+    def test_hash_value_with_trailing_comma(self):
+        string = "<id {a: '2', b: '3', } >"
+        lol = self.parser.parse(string)
+        self.assertEqual(len(lol['body']), 1)
+        val = lol['body'][0]['value']
+        self.assertEqual(len(val['content']), 2)
+        self.assertEqual(val['content'][0]['value']['content'], "2")
+        self.assertEqual(val['content'][1]['value']['content'], "3")
+
     def test_nested_hash_value(self):
         string = "<id {a: {}, b: { }}>"
         lol = self.parser.parse(string)
@@ -269,6 +278,7 @@ class L20nParserTestCase(unittest.TestCase):
             '<id[" ] "["a"]>',
             '<id[a]["a"]>',
             '<id["foo""foo"] "fo">',
+            '<id[a, b, ] "foo">',
         ]
         for string in strings:
             try:
@@ -314,6 +324,8 @@ class L20nParserTestCase(unittest.TestCase):
             '<id($n) {2',
             '<id($n) {2}',
             '<id(nm nm) {2}>',
+            '<id($n) {}>',
+            '<id($n, $m ,) {2}>',
         ]
         for string in strings:
             try:
@@ -564,6 +576,7 @@ class L20nParserTestCase(unittest.TestCase):
             '<id[foo())] "foo">',
             '<id[foo("ff)] "foo">',
             '<id[foo(ff")] "foo">',
+            '<id[foo(a, b, )] "foo">',
         ]
         for string in strings:
             try:
