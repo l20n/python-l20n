@@ -80,13 +80,6 @@ class Parser():
     def getHash(self):
         self._index += 1
         self.getWS()
-        if self._source[self._index] == '}':
-            self._index += 1
-            return {
-                'type': 'Hash',
-                'content': []
-            }
-
         hasDefItem = False
         hash = []
         while True:
@@ -94,7 +87,7 @@ class Parser():
             if self._source[self._index] == '*':
                 self._index += 1
                 if hasDefItem:
-                    raise error('Default item redefinition forbidden')
+                    raise self.error('Default item redefinition forbidden')
                 defItem = True
                 hasDefItem = True
             hi = self.getKVP('HashItem')

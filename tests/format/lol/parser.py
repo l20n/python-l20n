@@ -168,12 +168,6 @@ class L20nParserTestCase(unittest.TestCase):
                 raise AssertionError("Failed to raise parser error on string: %s" % string)
 
     def test_hash_value(self):
-        string = "<id {}>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 0)
-
         string = "<id {a: 'b', a2: 'c', d: 'd' }>"
         lol = self.parser.parse(string)
         self.assertEqual(len(lol['body']), 1)
@@ -199,13 +193,6 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(val['content'][1]['value']['content'], "3")
 
     def test_nested_hash_value(self):
-        string = "<id {a: {}, b: { }}>"
-        lol = self.parser.parse(string)
-        self.assertEqual(len(lol['body']), 1)
-        val = lol['body'][0]['value']
-        self.assertEqual(len(val['content']), 2)
-        self.assertEqual(len(val['content'][0]['value']['content']), 0)
-
         string = "<id {a: 'foo', b: {a2: 'p'}}>"
         lol = self.parser.parse(string)
         self.assertEqual(len(lol['body']), 1)
@@ -215,8 +202,14 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(val['content'][1]['value']['content'][0]['key']['name'], 'a2')
         self.assertEqual(val['content'][1]['value']['content'][0]['value']['content'], 'p')
 
+    def test_hash_with_default(self):
+        string = "<id {a: 'v', *b: 'c'}>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol['body'][0]['value']['content'][1]['default'], True)
+
     def test_hash_errors(self):
         strings = [
+            '<id {}>',
             '<id {a: 2}>',
             "<id {a: 'd'>",
             "<id a: 'd'}>",
@@ -228,6 +221,9 @@ class L20nParserTestCase(unittest.TestCase):
             "<id {\"a\": 'foo'}>",
             "<id {2: 'foo'}>",
             "<id {a:'foo'b:'foo'}>",
+            "<id {a }>",
+            '<id {a: 2, b , c: 3 } >',
+            '<id {*a: "v", *b: "c"}>',
         ]
         for string in strings:
             try:
