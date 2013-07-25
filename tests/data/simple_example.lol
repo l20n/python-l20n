@@ -1,3 +1,3 @@
 <foo {
-  a: "value", 
+  a: "value",
 *b: "value 2"}>

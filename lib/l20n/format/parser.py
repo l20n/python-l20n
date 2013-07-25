@@ -1,5 +1,6 @@
 import string
 
+
 class ParserError(Exception):
     def __init__(self, message, pos, context):
         self.name = 'ParserError'
@@ -7,8 +8,8 @@ class ParserError(Exception):
         self.pos = pos
         self.context = context
 
-class Parser():
 
+class Parser():
 
     def parse(self, string):
         self._source = string
@@ -113,11 +114,11 @@ class Parser():
         l = len(opchar)
         self._index += l
         start = self._index
-        
+
         close = self._source.find(opchar, start)
-        while close != -1 and \
-              ord(self._source[close - 1]) == 92 and \
-              ord(self._source[close - 2]) != 92:
+        while (close != -1 and
+               ord(self._source[close - 1]) == 92 and
+               ord(self._source[close - 2]) != 92):
             close = self._source.find(opchar, close + 1)
         if close == -1:
             raise self.error('Unclosed string literal')
@@ -125,10 +126,10 @@ class Parser():
         self._index = close + l
 
         # \\ | \' | \" | \{{
-        s = s.replace('\\\\', '\\');
-        s = s.replace('\\\'', '\'');
-        s = s.replace('\\"', '"');
-        s = s.replace('\{{', '{{');
+        s = s.replace('\\\\', '\\')
+        s = s.replace('\\\'', '\'')
+        s = s.replace('\\"', '"')
+        s = s.replace('\{{', '{{')
 
         return {
             'type': 'String',
@@ -205,10 +206,10 @@ class Parser():
            cc != 95:
             raise self.error('Identifier has to start with [a-zA-Z_]')
 
-        while (cc >= 97 and cc <= 122) or \
-              (cc >= 65 and cc <= 90) or \
-              (cc >= 48 and cc <= 57) or \
-              cc == 95:
+        while ((cc >= 97 and cc <= 122) or
+               (cc >= 65 and cc <= 90) or
+               (cc >= 48 and cc <= 57) or
+               cc == 95):
             index += 1
             if l <= index:
                 break
@@ -254,7 +255,7 @@ class Parser():
         self.getWS()
         exp = self.getExpression()
         self.getWS()
-        
+
         if self._index < self._length:
             ch = self._source[self._index]
         else:
@@ -324,8 +325,9 @@ class Parser():
                 return self.getMacro(id)
             if cc == 91:
                 self._index += 1
-                return self.getEntity(id,
-                                      self.getItemList(self.getExpression, ']'))
+                return (self
+                        .getEntity(id,
+                                   self.getItemList(self.getExpression, ']')))
             return self.getEntity(id, [])
 
         if cc == 47 and ord(self._source[self._index + 1]) == 42:
@@ -345,8 +347,8 @@ class Parser():
             if self._index < self._length:
                 self.getWS()
         return {
-          'type': 'LOL',
-          'body': entries
+            'type': 'LOL',
+            'body': entries
         }
 
     getLOL = getLOLPlain
@@ -482,10 +484,10 @@ class Parser():
                                         self.getUnaryExpression)
 
     def getUnaryExpression(self):
-        return self.getPostfixExpression([43, 45, 33], # + - !
-                                        'UnaryExpression',
-                                        'UnaryOperator',
-                                        self.getMemberExpression)
+        return self.getPostfixExpression([43, 45, 33],  # + - !
+                                         'UnaryExpression',
+                                         'UnaryOperator',
+                                         self.getMemberExpression)
 
     def getCallExpression(self, callee):
         self.getWS()
@@ -499,7 +501,8 @@ class Parser():
         if idref['type'] not in ['ParenthesisExpression',
                                  'Identifier',
                                  'ThisExpression']:
-            raise self.error('AttributeExpression must have Identifier, This or Parenthesis as left node')
+            raise self.error('AttributeExpression must have Identifier, '
+                             'This or Parenthesis as left node')
 
         if computed:
             self.getWS()
