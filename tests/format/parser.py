@@ -1,6 +1,11 @@
 import unittest
+import sys
+import os
 
-from l20n.format.lol.parser import Parser, ParserError
+path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(path, '..', '..', '..', 'lib'))
+
+from l20n.format.parser import Parser, ParserError
 
 class L20nParserTestCase(unittest.TestCase):
 
