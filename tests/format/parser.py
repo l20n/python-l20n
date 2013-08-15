@@ -79,7 +79,12 @@ class L20nParserTestCase(unittest.TestCase):
 
         string = "<id 'test \\a more'>"
         lol = self.parser.parse(string)
-        self.assertEqual(lol['body'][0]['value']['content'], "test \\a more")
+        self.assertEqual(lol['body'][0]['value']['content'], "test a more")
+
+    def test_string_unicode(self):
+        string = u"<id 'foo \\u00bd = \u00bd'>"
+        lol = self.parser.parse(string)
+        self.assertEqual(lol['body'][0]['value']['content'], u"foo \u00bd = \u00bd")
 
     def test_basic_errors(self):
         strings = [
@@ -112,6 +117,13 @@ class L20nParserTestCase(unittest.TestCase):
             except AssertionError:
                 raise AssertionError("Failed to raise parser error on: " +
                                      string)
+
+    def test_complex_strings(self):
+        string = "<id 'test {{ var }} test2'>"
+        cstr = self.parser.parse(string)
+        self.assertEqual(cstr['body'][0]['value']['content'][0]['content'], 'test ')
+        self.assertEqual(cstr['body'][0]['value']['content'][1]['name'], 'var')
+        self.assertEqual(cstr['body'][0]['value']['content'][2]['content'], ' test2')
 
     def test_basic_attributes(self):
         string = "<id attr1: 'foo'>"

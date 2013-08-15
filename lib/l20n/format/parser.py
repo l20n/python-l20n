@@ -1,5 +1,9 @@
 import string
 
+try:
+    unichr
+except NameError:
+    unichr = chr
 
 class ParserError(Exception):
     def __init__(self, message, pos, context):
@@ -111,30 +115,75 @@ class Parser():
         }
 
     def getString(self, opchar):
-        l = len(opchar)
-        self._index += l
-        start = self._index
+        buf = ""
+        body = []
+        oplen = len(opchar)
 
-        close = self._source.find(opchar, start)
-        while (close != -1 and
-               ord(self._source[close - 1]) == 92 and
-               ord(self._source[close - 2]) != 92):
-            close = self._source.find(opchar, close + 1)
-        if close == -1:
-            raise self.error('Unclosed string literal')
-        s = self._source[start:close]
-        self._index = close + l
+        self._index += oplen
 
-        # \\ | \' | \" | \{{
-        s = s.replace('\\\\', '\\')
-        s = s.replace('\\\'', '\'')
-        s = s.replace('\\"', '"')
-        s = s.replace('\{{', '{{')
+        while True:
+            ch = self._source[self._index]
+            # unescape
+            if ch == '\\':
+                self._index += 1
+                ch2 = self._source[self._index]
+                if ch2 == 'u':
+                    # unescape unicode \uXXXX chars
+                    buf += unichr(int(self._source[self._index+1:self._index+5], 16))
+                    self._index += 5
+                else:
+                    #otherwise just take the next char
+                    buf += ch2
+                    self._index += 1
+                ch = self._source[self._index]
+            # expression
+            if ch == '{':
+                if self._source[self._index+1] == '{':
+                    if len(buf):
+                        body.append({
+                            'type': 'String',
+                            'content': buf
+                        })
+                        buf = ""
+                    self._index += 2
+                    self.getWS()
+                    body.append(self.getExpression())
+                    self.getWS()
+                    self._index += 2
+                    ch = self._source[self._index]
+            # close string, depending on if oplen is 1 or 3
+            if oplen == 1:
+                if ch == opchar:
+                    self._index += oplen
+                    break
+            else:
+                if self._source[self._index:self._index+3] == opchar:
+                    self._index += oplen
+                    break
+            # or just add a char to a buffer
+            buf += ch
+            self._index += 1
+            if self._index >= self._length:
+                raise self.error('Unclosed string literal')
+                break
 
+        if len(buf):
+            if len(body):
+                # if there's body and a leftover, add the leftover
+                body.append({
+                    'type': 'String',
+                    'content': buf
+                })
+            else:
+                # otherwise return it as a simple string
+                return {
+                    'type': 'String',
+                    'content': buf
+                }
+        # if not returned as a simple string, return ComplexString
         return {
-            'type': 'String',
-            'content': s,
-            'isNotComplex': s.find('{{') == -1  # why || undefined in js?
+            'type': 'ComplexString',
+            'content': body
         }
 
     def getValue(self, optional=False, ch=None):
