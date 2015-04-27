@@ -118,6 +118,69 @@ class Parser():
             return value
         return val
 
+    def getWS(self):
+        cc = ord(self._source[self._index])
+
+        while cc == 32 or cc == 10 or cc == 9 or cc == 13:
+            self._index += 1
+            if self._length <= self._index:
+                break
+            cc = ord(self._source[self._index])
+
+    def getRequiredWS(self):
+        pos = self._index
+        if self._length > self._index:
+            cc = ord(self._source[self._index])
+        else:
+            return False
+
+        while cc == 32 or cc == 10 or cc == 9 or cc == 13:
+            self._index += 1
+            if self._length <= self._index:
+                break
+            cc = ord(self._source[self._index])
+        return pos != self._index
+
+    def getIdentifier(self):
+        reId = self._patterns['identifier']
+
+        match = reId.match(self._source[self._index:])
+
+        if not match:
+            raise self.error('Identifier has to start with [a-zA-Z_]')
+
+        self._index += match.end()
+        return match.group(0)
+
+    def getComplexId(self):
+        reId = self._patterns['complexId']
+
+        match = reId.match(self._source[self._index:])
+
+        if not match:
+            raise self.error('Identifier has to start with [a-zA-Z_]')
+
+        self._index += match.end()
+        return match.group(0)
+
+    def getString(self, opchar, opcharLen):
+        opcharPos = self._source.find(opchar, self._index + opcharLen)
+
+        if opcharPos == -1:
+            raise self.error('Unclosed literal string')
+        buf = self._source[self._index + opcharLen: opcharPos]
+
+        testPos = buf.find('{{')
+        if testPos != -1:
+            return self.getComplexString(opchar, opcharLen)
+
+        testPos = buf.find('\\')
+        if testPos != -1:
+            return self.getComplexString(opchar, opcharLen)
+
+        self._index = opcharPos + opcharLen
+        return [buf, self.isOverlay(buf)]
+
     def getAttributes(self):
         attrs = {}
 
@@ -277,69 +340,6 @@ class Parser():
                 overlay = True
             body.append(buf)
         return [body, overlay]
-
-    def getString(self, opchar, opcharLen):
-        opcharPos = self._source.find(opchar, self._index + opcharLen)
-
-        if opcharPos == -1:
-            raise self.error('Unclosed literal string')
-        buf = self._source[self._index + opcharLen: opcharPos]
-
-        testPos = buf.find('{{')
-        if testPos != -1:
-            return self.getComplexString(opchar, opcharLen)
-
-        testPos = buf.find('\\')
-        if testPos != -1:
-            return self.getComplexString(opchar, opcharLen)
-
-        self._index = opcharPos + opcharLen
-        return [buf, self.isOverlay(buf)]
-
-    def getRequiredWS(self):
-        pos = self._index
-        if self._length > self._index:
-            cc = ord(self._source[self._index])
-        else:
-            return False
-
-        while cc == 32 or cc == 10 or cc == 9 or cc == 13:
-            self._index += 1
-            if self._length <= self._index:
-                break
-            cc = ord(self._source[self._index])
-        return pos != self._index
-
-    def getWS(self):
-        cc = ord(self._source[self._index])
-
-        while cc == 32 or cc == 10 or cc == 9 or cc == 13:
-            self._index += 1
-            if self._length <= self._index:
-                break
-            cc = ord(self._source[self._index])
-
-    def getIdentifier(self):
-        reId = self._patterns['identifier']
-
-        match = reId.match(self._source[self._index:])
-
-        if not match:
-            raise self.error('Identifier has to start with [a-zA-Z_]')
-
-        self._index += match.end()
-        return match.group(0)
-
-    def getComplexId(self):
-        reId = self._patterns['complexId']
-
-        match = reId.match(self._source[self._index:])
-
-        if not match:
-            raise self.error('Identifier has to start with [a-zA-Z_]')
-
-        self._index += match.end()
-        return match.group(0)
 
     def getExpression(self):
         exp = self.getPrimaryExpression()
