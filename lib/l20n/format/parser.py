@@ -1,9 +1,4 @@
-import string
-
-try:
-    unichr
-except NameError:
-    unichr = chr
+import re
 
 class ParserError(Exception):
     def __init__(self, message, pos, context):
@@ -12,35 +7,28 @@ class ParserError(Exception):
         self.pos = pos
         self.context = context
 
+MAX_PLACEABLES = 100
 
 class Parser():
+    def __init__(self):
+        self._patterns = {
+            'complexId': re.compile(r'[A-Za-z_][\w\.]*'),
+            'identifier': re.compile(r'[A-Za-z_]\w*'),
+        }
 
     def parse(self, string):
         self._source = string
         self._index = 0
         self._length = len(string)
 
-        return self.getLOL()
-
-    def getComment(self):
-        self._index += 2
-        start = self._index
-        end = self._source.find('*/', start)
-
-        if end == -1:
-            raise self.error('Comment without closing tag')
-        self._index = end + 2
-        return {
-            'type': 'Comment',
-            'content': self._source[start:end]
-        }
+        return self.getL20n()
 
     def getAttributes(self):
-        attrs = []
+        attrs = {}
+
         while True:
-            attr = self.getKVPWithIndex('Attribute')
-            attr['local'] = attr['key']['name'][0] == '_'
-            attrs.append(attr)
+            attr = self.getKVPWithIndex()
+            attrs[attr[0]] = attr[1]
             ws1 = self.getRequiredWS()
             ch = self._source[self._index]
             if ch == '>':
@@ -49,18 +37,14 @@ class Parser():
                 raise self.error('Expected ">"')
         return attrs
 
-    def getKVP(self, type):
+    def getKVP(self):
         key = self.getIdentifier()
         self.getWS()
         if self._source[self._index] != ':':
             raise self.error('Expected ":"')
         self._index += 1
         self.getWS()
-        return {
-            'type': type,
-            'key': key,
-            'value': self.getValue()
-        }
+        return [key, self.getValue()]
 
     def getKVPWithIndex(self, type=None):
         key = self.getIdentifier()
@@ -75,260 +59,218 @@ class Parser():
             raise self.error('Expected ":"')
         self._index += 1
         self.getWS()
-        return {
-            'type': type,
-            'key': key,
-            'value': self.getValue(),
-            'index': index
-        }
+        return [key, self.getValue(False, None, index)]
 
     def getHash(self):
         self._index += 1
         self.getWS()
-        hasDefItem = False
-        hash = []
+        defItem = None
+        hi = None
+        comma = None
+        hash = {}
+
         while True:
-            defItem = False
+            isDefItem = False
             if self._source[self._index] == '*':
                 self._index += 1
-                if hasDefItem:
+                if defItem is not None:
                     raise self.error('Default item redefinition forbidden')
-                defItem = True
-                hasDefItem = True
-            hi = self.getKVP('HashItem')
-            hi['default'] = defItem
-            hash.append(hi)
+                isDefItem = True
+            hi = self.getKVP()
+            hash[hi[0]] = hi[1]
+            if isDefItem:
+                defItem = hi[0]
             self.getWS()
 
             comma = self._source[self._index] == ','
+
             if comma:
                 self._index += 1
                 self.getWS()
+
             if self._source[self._index] == '}':
                 self._index += 1
                 break
             if not comma:
                 raise self.error('Expected "}"')
-        return {
-            'type': 'Hash',
-            'content': hash
-        }
 
-    def getString(self, opchar):
-        buf = ""
-        body = []
-        oplen = len(opchar)
+        if defItem is not None:
+            hash['__default'] = defItem
+        return hash
 
-        self._index += oplen
-
-        while True:
-            ch = self._source[self._index]
-            # unescape
-            if ch == '\\':
+    def unescapeString(self):
+        self._index += 1
+        ch = self._source[self._index]
+        if ch == 'u':
+            ucode = ''
+            for i in range(0, 4):
                 self._index += 1
-                ch2 = self._source[self._index]
-                if ch2 == 'u':
-                    # unescape unicode \uXXXX chars
-                    buf += unichr(int(self._source[self._index+1:self._index+5], 16))
-                    self._index += 5
-                else:
-                    #otherwise just take the next char
-                    buf += ch2
-                    self._index += 1
                 ch = self._source[self._index]
-            # expression
-            if ch == '{':
-                if self._source[self._index+1] == '{':
-                    if len(buf):
-                        body.append({
-                            'type': 'String',
-                            'content': buf
-                        })
-                        buf = ""
+                cc = ord(ch[0])
+                if (cc > 96 and cc < 103) or \
+                   (cc > 64 and cc < 71) or \
+                   (cc > 47 and cc < 58):
+                    ucode += ch
+                else:
+                    raise self.error('Illegal unicode escape sequence')
+            return unichr(int(ucode, 16)) 
+        return ch
+
+    def isOverlay(self, string):
+        overlay = False
+
+        testPos = string.find('<')
+
+        if testPos != -1 and string[testPos + 1] != ' ':
+            overlay = True
+        else:
+            testPos = string.find('&')
+            if testPos != -1 and string[testPos + 1] != ' ':
+                overlay = True
+
+        return overlay
+
+    def getComplexString(self, opchar, opcharLen):
+        body = None
+        buf = ''
+        placeables = 0
+        overlay = False
+        
+        self._index += opcharLen - 1
+
+        walkChars = True
+        while walkChars:
+            self._index += 1
+            ch = self._source[self._index]
+            if ch == '\\':
+                buf += self.unescapeString()
+            elif ch == '{' and self._source[self._index + 1] == '{':
+                    if body is None:
+                        body = []
+                    if placeables > MAX_PLACEABLES - 1:
+                        raise self.error('Too many placeables, maximum allowed is ' + MAX_PLACEABLES)
+                    if buf:
+                        if self.isOverlay(buf):
+                            overlay = True
+                        body.append(buf)
                     self._index += 2
                     self.getWS()
                     body.append(self.getExpression())
                     self.getWS()
-                    self._index += 2
-                    ch = self._source[self._index]
-            # close string, depending on if oplen is 1 or 3
-            if oplen == 1:
+                    if self._source[self._index] != '}' or \
+                       self._source[self._index + 1] != '}':
+                        raise self.error('Expected "}}"')
+                    self._index += 1
+                    placeables += 1
+
+                    buf = ''
+            else:
                 if ch == opchar:
-                    self._index += oplen
-                    break
-            else:
-                if self._source[self._index:self._index+3] == opchar:
-                    self._index += oplen
-                    break
-            # or just add a char to a buffer
-            buf += ch
-            self._index += 1
-            if self._index >= self._length:
-                raise self.error('Unclosed string literal')
-                break
+                    self._index += 1
+                    walkChars = False
+                else:
+                    buf += ch
+                    if self._index + 1 >= self._length:
+                        raise self.error('Unclosed string literal')
 
+        if body == None:
+            return [buf, self.isOverlay(buf)]
         if len(buf):
-            if len(body):
-                # if there's body and a leftover, add the leftover
-                body.append({
-                    'type': 'String',
-                    'content': buf
-                })
-            else:
-                # otherwise return it as a simple string
-                return {
-                    'type': 'String',
-                    'content': buf
-                }
-        # if not returned as a simple string, return ComplexString
-        return {
-            'type': 'ComplexString',
-            'content': body
-        }
+            if self.isOverlay(buf):
+                overlay = True
+            body.append(buf)
+        return [body, overlay]
 
-    def getValue(self, optional=False, ch=None):
+
+    def getString(self, opchar, opcharLen):
+        opcharPos = self._source.find(opchar, self._index + opcharLen)
+
+        if opcharPos == -1:
+            raise self.error('Unclosed literal string')
+        buf = self._source[self._index + opcharLen: opcharPos]
+
+        testPos = buf.find('{{')
+        if testPos != -1:
+            return self.getComplexString(opchar, opcharLen)
+
+        testPos = buf.find('\\')
+        if testPos != -1:
+            return self.getComplexString(opchar, opcharLen)
+
+        self._index = opcharPos + opcharLen
+        return [buf, self.isOverlay(buf)]
+
+    def getValue(self, optional=False, ch=None, index=None):
+        overlay = False
+
         if ch is None:
             if self._length > self._index:
                 ch = self._source[self._index]
             else:
                 ch = None
         if ch == "'" or ch == '"':
-            if ch == self._source[self._index + 1] and \
-               ch == self._source[self._index + 2]:
-                return self.getString(ch*3)
-            return self.getString(ch)
-        if ch == '{':
-            return self.getHash()
-        if not optional:
-            raise self.error('Unknown value type')
-        return None
+            val = self.getString(ch, 1)
+            overlay = val[1]
+            val = val[0]
+        elif ch == '{':
+            val = self.getHash()
+        else:
+            if not optional:
+                raise self.error('Unknown value type')
+            return None
 
-    def getWS(self, wschars=string.whitespace):
+        if index or overlay:
+            value = {}
+            value['v'] = val
+
+            if index:
+                value['x'] = index
+            if overlay:
+                value['t'] = 'overlay'
+            return value
+        return val
+
+    def getRequiredWS(self):
+        pos = self._index
         if self._length > self._index:
-            ch = self._source[self._index]
-        else:
-            return False
-
-        while ch in wschars:
-            self._index += 1
-            if self._length > self._index:
-                ch = self._source[self._index]
-            else:
-                break
-
-    def getRequiredWS(self, wschars=string.whitespace):
-        if self._length > self._index:
-            ch = self._source[self._index]
-        else:
-            return False
-
-        ws = False
-        while ch in wschars:
-            ws = True
-            self._index += 1
-            if self._length > self._index:
-                ch = self._source[self._index]
-            else:
-                break
-
-        return ws
-
-    def getVariable(self):
-        self._index += 1
-        return {
-            'type': 'VariableExpression',
-            'id': self.getIdentifier()
-        }
-
-    def getIdentifier(self):
-        index = self._index
-        start = index
-        source = self._source
-        l = len(source)
-        if index < l:
-            cc = ord(source[start])
-        else:
-            cc = -1
-
-        if (cc < 97 or cc > 122) and \
-           (cc < 65 or cc > 90) and \
-           cc != 95:
-            raise self.error('Identifier has to start with [a-zA-Z_]')
-
-        while ((cc >= 97 and cc <= 122) or
-               (cc >= 65 and cc <= 90) or
-               (cc >= 48 and cc <= 57) or
-               cc == 95):
-            index += 1
-            if l <= index:
-                break
-            cc = ord(source[index])
-
-        self._index = index
-
-        return {
-            'type': 'Identifier',
-            'name': source[start:index]
-        }
-
-    def getImportStatement(self):
-        self._index += 6
-        if self._source[self._index] != "(":
-            raise self.error('Expected "("')
-        self._index += 1
-        self.getWS()
-        uri = self.getString(self._source[self._index])
-        self.getWS()
-        if self._source[self._index] != ")":
-            raise self.error('Expected ")"')
-        self._index += 1
-        return {
-            'type': 'ImportStatement',
-            'uri': uri
-        }
-
-    def getMacro(self, id):
-        if id['name'][0] == '_':
-            raise self.error('Macro ID cannot start with "_"')
-        self._index += 1
-        idlist = self.getItemList(self.getVariable, ')')
-        self.getRequiredWS()
-
-        if self._index < self._length:
-            ch = self._source[self._index]
-        else:
-            ch = None
-        if ch != '{':
-            raise self.error('Expected "{"')
-        self._index += 1
-        self.getWS()
-        exp = self.getExpression()
-        self.getWS()
-
-        if self._index < self._length:
-            ch = self._source[self._index]
-        else:
-            ch = None
-        if ch != '}':
-            raise self.error('Expected "}"')
-        self._index += 1
-        self.getWS()
-
-        if self._index < self._length:
             cc = ord(self._source[self._index])
         else:
-            cc = -1
-        if cc != 62:
-            raise self.error('Expected ">"')
-        self._index += 1
-        return {
-            'type': 'Macro',
-            'id': id,
-            'args': idlist,
-            'expression': exp
-        }
+            return False
+
+        while cc == 32 or cc == 10 or cc == 9 or cc == 13:
+            self._index += 1
+            if self._length <= self._index:
+                break
+            cc = ord(self._source[self._index])
+        return pos != self._index
+
+    def getWS(self):
+        cc = ord(self._source[self._index])
+
+        while cc == 32 or cc == 10 or cc == 9 or cc == 13:
+            self._index += 1
+            if self._length <= self._index:
+                break
+            cc = ord(self._source[self._index])
+
+    def getIdentifier(self):
+        reId = self._patterns['identifier']
+
+        match = reId.match(self._source[self._index:])
+
+        if not match:
+            raise self.error('Identifier has to start with [a-zA-Z_]')
+
+        self._index += match.end()
+        return match.group(0)
+
 
     def getEntity(self, id, index):
+        entity = {'$i': id}
+
+        if index:
+            entity['$x'] = index
+
         if not self.getRequiredWS():
             raise self.error('Expected white space')
 
@@ -336,13 +278,15 @@ class Parser():
             ch = self._source[self._index]
         else:
             ch = None
-        value = self.getValue(True, ch)
-        attrs = []
+        value = self.getValue(index is None, ch)
+        attrs = None
+
         if value is None:
             if ch == '>':
                 raise self.error('Expected ">"')
             attrs = self.getAttributes()
         else:
+            entity['$v'] = value
             ws1 = self.getRequiredWS()
             if not self._source[self._index] == '>':
                 if not ws1:
@@ -350,360 +294,91 @@ class Parser():
                 attrs = self.getAttributes()
 
         self._index += 1
-        return {
-            'type': 'Entity',
-            'id': id,
-            'value': value,
-            'index': index,
-            'attrs': attrs,
-            'local': (ord(id['name'][0]) == 95)
-        }
+        if attrs:
+            for key in attrs:
+                entity[key] = attrs[key]
+
+        return entity
 
     def getEntry(self):
-        cc = ord(self._source[self._index])
-
-        if cc == 60:
+        # 66 === '<'
+        if ord(self._source[self._index]) == 60:
             self._index += 1
             id = self.getIdentifier()
             if self._index < self._length:
                 cc = ord(self._source[self._index])
             else:
                 cc = None
-
-            if cc == 40:
-                return self.getMacro(id)
+            # 91 === '['
             if cc == 91:
                 self._index += 1
-                return (self
-                        .getEntity(id,
-                                   self.getItemList(self.getExpression, ']')))
-            return self.getEntity(id, [])
-
-        if cc == 47 and ord(self._source[self._index + 1]) == 42:
-            return self.getComment()
-
-        if self._source[self._index:self._index+6] == 'import':
-            return self.getImportStatement()
+                return self.getEntity(id, 
+                                      self.getItemList(self.getExpression, ']'))
+            return self.getEntity(id, None)
         raise self.error('Invalid entry')
 
-    def getLOLPlain(self):
-        entries = []
+    def getL20n(self):
+        ast = []
 
         self.getWS()
 
         while self._index < self._length:
-            entries.append(self.getEntry())
+            ast.append(self.getEntry())
             if self._index < self._length:
                 self.getWS()
-        return {
-            'type': 'LOL',
-            'body': entries
-        }
-
-    getLOL = getLOLPlain
+        return ast
 
     def getExpression(self):
-        return self.getConditionalExpression()
+        exp = self.getPrimaryExpression()
 
-    def getPrefixExpression(self, token, cl, op, nxt):
-        exp = nxt()
+        self.getWS()
 
-        while True:
-            t = ''
-            self.getWS()
-            if self._index < self._length:
-                ch = self._source[self._index]
-            else:
-                ch = None
-            if ch not in token[0]:
-                break
-            t += ch
+        if self._source[self._index] == '(':
             self._index += 1
-            if len(token) > 1:
-                if self._index < self._length:
-                    ch = self._source[self._index]
-                else:
-                    ch = None
-                if token[1] == ch:
-                    self._index += 1
-                    t += ch
-                elif token[2]:
-                    self._index -= 1
-                    return exp
-            self.getWS()
-            exp = {
-                'type': cl,
-                'operator': {
-                    'type': op,
-                    'token': t
-                },
-                'left': exp,
-                'right': nxt()
-            }
+            return self.getCallExpression(exp)
         return exp
-
-    def getPostfixExpression(self, token, cl, op, nxt):
-        if self._index < self._length:
-            cc = ord(self._source[self._index])
-        else:
-            cc = -1
-        if cc not in token:
-            return nxt()
-        self._index += 1
-        self.getWS()
-        return {
-            'type': cl,
-            'operator': {
-                'type': op,
-                'token': chr(cc)
-            },
-            'argument': self.getPostfixExpression(token, cl, op, nxt)
-        }
-
-    def getConditionalExpression(self):
-        exp = self.getOrExpression()
-        self.getWS()
-        if self._index < self._length:
-            cc = ord(self._source[self._index])
-        else:
-            cc = -1
-        if cc != 63:
-            return exp
-        self._index += 1
-        self.getWS()
-        consequent = self.getExpression()
-        self.getWS()
-        if ord(self._source[self._index]) != 58:
-            raise self.error('Expected ":"')
-        self._index += 1
-        self.getWS()
-        return {
-            'type': 'ConditionalExpression',
-            'test': exp,
-            'consequent': consequent,
-            'alternate': self.getExpression()
-        }
-
-    def getOrExpression(self):
-        return self.getPrefixExpression([['|'], '|', True],
-                                        'LogicalExpression',
-                                        'LogicalOperator',
-                                        self.getAddExpression)
-
-    def getAddExpression(self):
-        return self.getPrefixExpression([['&'], '&', True],
-                                        'LogicalExpression',
-                                        'LogicalOperator',
-                                        self.getEqualityExpression)
-
-    def getEqualityExpression(self):
-        return self.getPrefixExpression([['=', '!'], '=', True],
-                                        'BinaryExpression',
-                                        'BinaryOperator',
-                                        self.getRelationalExpression)
-
-    def getRelationalExpression(self):
-        return self.getPrefixExpression([['<', '>'], '=', False],
-                                        'BinaryExpression',
-                                        'BinaryOperator',
-                                        self.getAdditiveExpression)
-
-    def getAdditiveExpression(self):
-        return self.getPrefixExpression([['+', '-']],
-                                        'BinaryExpression',
-                                        'BinaryOperator',
-                                        self.getModuloExpression)
-
-    def getModuloExpression(self):
-        return self.getPrefixExpression([['%']],
-                                        'BinaryExpression',
-                                        'BinaryOperator',
-                                        self.getMultiplicativeExpression)
-
-    def getMultiplicativeExpression(self):
-        return self.getPrefixExpression([['*']],
-                                        'BinaryExpression',
-                                        'BinaryOperator',
-                                        self.getDividiveExpression)
-
-    def getDividiveExpression(self):
-        return self.getPrefixExpression([['/']],
-                                        'BinaryExpression',
-                                        'BinaryOperator',
-                                        self.getUnaryExpression)
-
-    def getUnaryExpression(self):
-        return self.getPostfixExpression([43, 45, 33],  # + - !
-                                         'UnaryExpression',
-                                         'UnaryOperator',
-                                         self.getMemberExpression)
-
-    def getCallExpression(self, callee):
-        self.getWS()
-        return {
-            'type': 'CallExpression',
-            'callee': callee,
-            'arguments': self.getItemList(self.getExpression, ')')
-        }
-
-    def getAttributeExpression(self, idref, computed):
-        if idref['type'] not in ['ParenthesisExpression',
-                                 'Identifier',
-                                 'ThisExpression']:
-            raise self.error('AttributeExpression must have Identifier, '
-                             'This or Parenthesis as left node')
-
-        if computed:
-            self.getWS()
-            exp = self.getExpression()
-            self.getWS()
-            if self._source[self._index] != ']':
-                raise self.error('Expected "]"')
-            self._index += 1
-            return {
-                'type': 'AttributeExpression',
-                'expression': idref,
-                'attribute': exp,
-                'computed': True
-            }
-        exp = self.getIdentifier()
-        return {
-            'type': 'AttributeExpression',
-            'expression': idref,
-            'attribute': exp,
-            'computed': False
-        }
-
-    def getPropertyExpression(self, idref, computed):
-        if computed:
-            self.getWS()
-            exp = self.getExpression()
-            self.getWS()
-            if self._source[self._index] != ']':
-                raise self.error('Expected "]"')
-            self._index += 1
-            return {
-                'type': 'PropertyExpression',
-                'expression': idref,
-                'property': exp,
-                'computed': True
-            }
-        exp = self.getIdentifier()
-        return {
-            'type': 'PropertyExpression',
-            'expression': idref,
-            'property': exp,
-            'computed': False
-        }
-
-    def getMemberExpression(self):
-        exp = self.getParenthesisExpression()
-
-        while True:
-            if self._index < self._length:
-                cc = ord(self._source[self._index])
-            else:
-                cc = -1
-            if cc == 46 or cc == 91:
-                self._index += 1
-                exp = self.getPropertyExpression(exp, cc == 91)
-            elif cc == 58 and ord(self._source[self._index + 1]) == 58:
-                self._index += 2
-                if ord(self._source[self._index]) == 91:
-                    self._index += 1
-                    exp = self.getAttributeExpression(exp, True)
-                else:
-                    exp = self.getAttributeExpression(exp, False)
-            elif cc == 40:
-                self._index += 1
-                exp = self.getCallExpression(exp)
-            else:
-                break
-        return exp
-
-    def getParenthesisExpression(self):
-        if self._index < self._length:
-            cc = ord(self._source[self._index])
-        else:
-            cc = -1
-        if cc == 40:
-            self._index += 1
-            self.getWS()
-            pexp = {
-                'type': 'ParenthesisExpression',
-                'expression': self.getExpression()
-            }
-            self.getWS()
-            if ord(self._source[self._index]) != 41:
-                raise self.error('Expected ")"')
-            self._index += 1
-            return pexp
-        return self.getPrimaryExpression()
 
     def getPrimaryExpression(self):
-        pos = self._index
-        if pos < self._length:
-            cc = ord(self._source[pos])
-        else:
-            cc = -1
+        cc = ord(self._source[self._index])
 
-        while cc > 47 and cc < 58:
-            pos += 1
-            if pos < self._length:
-                cc = ord(self._source[pos])
-            else:
-                cc = -1
-        if pos > self._index:
-            start = self._index
-            self._index = pos
-            return {
-                'type': 'Number',
-                'value': int(self._source[start: pos])
-            }
-
-        if cc in [39, 34, 123, 91]:
-            return self.getValue()
+        prim = {}
 
         if cc == 36:
-            return self.getVariable()
-
-        if cc == 64:
             self._index += 1
-            return {
-                'type': 'GlobalExpression',
-                'id': self.getIdentifier()
-            }
-
-        if cc == 126:
+            prim['t'] = 'var'
+            prim['v'] = self.getComplexId()
+        elif cc == 64:
             self._index += 1
-            return {
-                'type': 'ThisExpression'
-            }
+            prim['t'] = 'glob'
+            prim['v'] = self.getComplexId()
+        else:
+            prim['t'] = 'id'
+            prim['v'] = self.getIdentifier()
 
-        return self.getIdentifier()
+        return prim
 
     def getItemList(self, callback, closeChar):
         self.getWS()
         if self._source[self._index] == closeChar:
             self._index += 1
             return []
+
         items = []
 
         while True:
             items.append(callback())
             self.getWS()
-            if self._index < self._length:
-                ch = self._source[self._index]
-            else:
-                ch = None
+
+            ch = self._source[self._index]
             if ch == ',':
                 self._index += 1
                 self.getWS()
             elif ch == closeChar:
                 self._index += 1
-                break
+                break;
             else:
-                raise self.error('Expected "," or "%s"' % closeChar)
+                raise self.error('Expected "," or "' + closeChar + '"')
+
         return items
 
     def error(self, message, pos=None):
@@ -716,3 +391,4 @@ class Parser():
 
         msg = '%s at pos %s: "%s"' % (message, pos, context)
         return ParserError(msg, pos, context)
+
