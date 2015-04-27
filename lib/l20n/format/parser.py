@@ -1,5 +1,6 @@
 import re
 
+
 class ParserError(Exception):
     def __init__(self, message, pos, context):
         self.name = 'ParserError'
@@ -9,12 +10,12 @@ class ParserError(Exception):
 
 MAX_PLACEABLES = 100
 
+
 class Parser():
-    def __init__(self):
-        self._patterns = {
-            'complexId': re.compile(r'[A-Za-z_][\w\.]*'),
-            'identifier': re.compile(r'[A-Za-z_]\w*'),
-        }
+    _patterns = {
+        'complexId': re.compile(r'[A-Za-z_][\w\.]*'),
+        'identifier': re.compile(r'[A-Za-z_]\w*'),
+    }
 
     def parse(self, string):
         self._source = string
@@ -22,6 +23,100 @@ class Parser():
         self._length = len(string)
 
         return self.getL20n()
+
+    def getL20n(self):
+        ast = []
+
+        self.getWS()
+
+        while self._index < self._length:
+            ast.append(self.getEntry())
+            if self._index < self._length:
+                self.getWS()
+        return ast
+
+    def getEntry(self):
+        # 66 === '<'
+        if ord(self._source[self._index]) == 60:
+            self._index += 1
+            id = self.getIdentifier()
+            if self._index < self._length:
+                cc = ord(self._source[self._index])
+            else:
+                cc = None
+            # 91 === '['
+            if cc == 91:
+                self._index += 1
+                return self.getEntity(id,
+                                      self.getItemList(self.getExpression,
+                                                       ']'))
+            return self.getEntity(id, None)
+        raise self.error('Invalid entry')
+
+    def getEntity(self, id, index):
+        entity = {'$i': id}
+
+        if index:
+            entity['$x'] = index
+
+        if not self.getRequiredWS():
+            raise self.error('Expected white space')
+
+        if self._length > self._index:
+            ch = self._source[self._index]
+        else:
+            ch = None
+        value = self.getValue(index is None, ch)
+        attrs = None
+
+        if value is None:
+            if ch == '>':
+                raise self.error('Expected ">"')
+            attrs = self.getAttributes()
+        else:
+            entity['$v'] = value
+            ws1 = self.getRequiredWS()
+            if not self._source[self._index] == '>':
+                if not ws1:
+                    raise self.error('Expected ">"')
+                attrs = self.getAttributes()
+
+        self._index += 1
+        if attrs:
+            for key in attrs:
+                entity[key] = attrs[key]
+
+        return entity
+
+    def getValue(self, optional=False, ch=None, index=None):
+        overlay = False
+
+        if ch is None:
+            if self._length > self._index:
+                ch = self._source[self._index]
+            else:
+                ch = None
+        if ch == "'" or ch == '"':
+            val = self.getString(ch, 1)
+            overlay = val[1]
+            val = val[0]
+        elif ch == '{':
+            val = self.getHash()
+        else:
+            if not optional:
+                raise self.error('Unknown value type')
+            return None
+
+        if index or overlay:
+            value = {}
+            value['v'] = val
+
+            if index:
+                value['x'] = index
+            if overlay:
+                value['t'] = 'overlay'
+            return value
+        return val
 
     def getAttributes(self):
         attrs = {}
@@ -113,7 +208,7 @@ class Parser():
                     ucode += ch
                 else:
                     raise self.error('Illegal unicode escape sequence')
-            return unichr(int(ucode, 16)) 
+            return unichr(int(ucode, 16))
         return ch
 
     def isOverlay(self, string):
@@ -135,7 +230,7 @@ class Parser():
         buf = ''
         placeables = 0
         overlay = False
-        
+
         self._index += opcharLen - 1
 
         walkChars = True
@@ -148,7 +243,9 @@ class Parser():
                     if body is None:
                         body = []
                     if placeables > MAX_PLACEABLES - 1:
-                        raise self.error('Too many placeables, maximum allowed is ' + MAX_PLACEABLES)
+                        raise self.error(
+                            'Too many placeables, maximum allowed is ' +
+                            MAX_PLACEABLES)
                     if buf:
                         if self.isOverlay(buf):
                             overlay = True
@@ -173,14 +270,13 @@ class Parser():
                     if self._index + 1 >= self._length:
                         raise self.error('Unclosed string literal')
 
-        if body == None:
+        if body is None:
             return [buf, self.isOverlay(buf)]
         if len(buf):
             if self.isOverlay(buf):
                 overlay = True
             body.append(buf)
         return [body, overlay]
-
 
     def getString(self, opchar, opcharLen):
         opcharPos = self._source.find(opchar, self._index + opcharLen)
@@ -199,36 +295,6 @@ class Parser():
 
         self._index = opcharPos + opcharLen
         return [buf, self.isOverlay(buf)]
-
-    def getValue(self, optional=False, ch=None, index=None):
-        overlay = False
-
-        if ch is None:
-            if self._length > self._index:
-                ch = self._source[self._index]
-            else:
-                ch = None
-        if ch == "'" or ch == '"':
-            val = self.getString(ch, 1)
-            overlay = val[1]
-            val = val[0]
-        elif ch == '{':
-            val = self.getHash()
-        else:
-            if not optional:
-                raise self.error('Unknown value type')
-            return None
-
-        if index or overlay:
-            value = {}
-            value['v'] = val
-
-            if index:
-                value['x'] = index
-            if overlay:
-                value['t'] = 'overlay'
-            return value
-        return val
 
     def getRequiredWS(self):
         pos = self._index
@@ -264,69 +330,16 @@ class Parser():
         self._index += match.end()
         return match.group(0)
 
+    def getComplexId(self):
+        reId = self._patterns['complexId']
 
-    def getEntity(self, id, index):
-        entity = {'$i': id}
+        match = reId.match(self._source[self._index:])
 
-        if index:
-            entity['$x'] = index
+        if not match:
+            raise self.error('Identifier has to start with [a-zA-Z_]')
 
-        if not self.getRequiredWS():
-            raise self.error('Expected white space')
-
-        if self._length > self._index:
-            ch = self._source[self._index]
-        else:
-            ch = None
-        value = self.getValue(index is None, ch)
-        attrs = None
-
-        if value is None:
-            if ch == '>':
-                raise self.error('Expected ">"')
-            attrs = self.getAttributes()
-        else:
-            entity['$v'] = value
-            ws1 = self.getRequiredWS()
-            if not self._source[self._index] == '>':
-                if not ws1:
-                    raise self.error('Expected ">"')
-                attrs = self.getAttributes()
-
-        self._index += 1
-        if attrs:
-            for key in attrs:
-                entity[key] = attrs[key]
-
-        return entity
-
-    def getEntry(self):
-        # 66 === '<'
-        if ord(self._source[self._index]) == 60:
-            self._index += 1
-            id = self.getIdentifier()
-            if self._index < self._length:
-                cc = ord(self._source[self._index])
-            else:
-                cc = None
-            # 91 === '['
-            if cc == 91:
-                self._index += 1
-                return self.getEntity(id, 
-                                      self.getItemList(self.getExpression, ']'))
-            return self.getEntity(id, None)
-        raise self.error('Invalid entry')
-
-    def getL20n(self):
-        ast = []
-
-        self.getWS()
-
-        while self._index < self._length:
-            ast.append(self.getEntry())
-            if self._index < self._length:
-                self.getWS()
-        return ast
+        self._index += match.end()
+        return match.group(0)
 
     def getExpression(self):
         exp = self.getPrimaryExpression()
@@ -353,10 +366,12 @@ class Parser():
 
         prim = {}
 
+        # variable: $
         if cc == 36:
             self._index += 1
             prim['t'] = 'var'
             prim['v'] = self.getComplexId()
+        # global: @
         elif cc == 64:
             self._index += 1
             prim['t'] = 'glob'
@@ -385,7 +400,7 @@ class Parser():
                 self.getWS()
             elif ch == closeChar:
                 self._index += 1
-                break;
+                break
             else:
                 raise self.error('Expected "," or "' + closeChar + '"')
 
@@ -401,4 +416,3 @@ class Parser():
 
         msg = '%s at pos %s: "%s"' % (message, pos, context)
         return ParserError(msg, pos, context)
-
