@@ -338,6 +338,16 @@ class Parser():
             return self.getCallExpression(exp)
         return exp
 
+    def getCallExpression(self, callee):
+        self.getWS()
+        exp = {}
+
+        exp['t'] = 'call'
+        exp['v'] = callee
+        exp['a'] = self.getItemList(self.getExpression, ')')
+
+        return exp
+
     def getPrimaryExpression(self):
         cc = ord(self._source[self._index])
 

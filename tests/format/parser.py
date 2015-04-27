@@ -249,12 +249,12 @@ class L20nParserTestCase(unittest.TestCase):
                                      string)
 
 #    def test_index(self):
-#        #string = "<id[]>"
-#        #ast = self.parser.parse(string)
-#        #self.assertEqual(len(ast), 1)
-#        #self.assertEqual(len(ast[0]['index']), 0)
-#        #self.assertEqual(ast[0]['$v'], None)
-#
+#        string = "<id[]>"
+#        ast = self.parser.parse(string)
+#        self.assertEqual(len(ast), 1)
+#        self.assertEqual(len(ast[0]['index']), 0)
+#        self.assertEqual(ast[0]['$v'], None)
+
 #        #string = "<id[ ] >"
 #        #ast = self.parser.parse(string)
 #        #self.assertEqual(len(ast), 1)
@@ -281,25 +281,25 @@ class L20nParserTestCase(unittest.TestCase):
 #        self.assertEqual(entity['index'][2]['$v'], 3)
 #        self.assertEqual(entity['$v'], "foo2")
 #
-#    def test_index_errors(self):
-#        strings = [
-#            '<id[ "foo">',
-#            '<id] "foo">',
-#            '<id[ \'] "foo">',
-#            '<id{ ] "foo">',
-#            '<id[ } "foo">',
-#            '<id[" ] "["a"]>',
-#            '<id[a]["a"]>',
-#            '<id["foo""foo"] "fo">',
-#            '<id[a, b, ] "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_index_errors(self):
+        strings = [
+            '<id[ "foo">',
+            '<id] "foo">',
+            '<id[ \'] "foo">',
+            '<id{ ] "foo">',
+            '<id[ } "foo">',
+            '<id[" ] "["a"]>',
+            '<id[a]["a"]>',
+            '<id["foo""foo"] "fo">',
+            '<id[a, b, ] "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_macro(self):
 #        string = "<id($n) {2}>"
 #        ast = self.parser.parse(string)
@@ -313,41 +313,41 @@ class L20nParserTestCase(unittest.TestCase):
 #        self.assertEqual(len(ast[0]['args']), 3)
 #        self.assertEqual(ast[0]['expression']['$v'], 2)
 #
-#    def test_macro_errors(self):
-#        strings = [
-#            '<id (n) {2}>',
-#            '<id ($n) {2}>',
-#            '<(n) {2}>',
-#            '<id(() {2}>',
-#            '<id()) {2}>',
-#            '<id[) {2}>',
-#            '<id(] {2}>',
-#            '<id(-) {2}>',
-#            '<id(2+2) {2}>',
-#            '<id("a") {2}>',
-#            '<id(\'a\') {2}>',
-#            '<id(2) {2}>',
-#            '<_id($n) {2}>',
-#            '<id($n) 2}>',
-#            '<id($n',
-#            '<id($n ',
-#            '<id($n)',
-#            '<id($n) ',
-#            '<id($n) {',
-#            '<id($n) { ',
-#            '<id($n) {2',
-#            '<id($n) {2}',
-#            '<id(nm nm) {2}>',
-#            '<id($n) {}>',
-#            '<id($n, $m ,) {2}>',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_macro_errors(self):
+        strings = [
+            '<id (n) {2}>',
+            '<id ($n) {2}>',
+            '<(n) {2}>',
+            '<id(() {2}>',
+            '<id()) {2}>',
+            '<id[) {2}>',
+            '<id(] {2}>',
+            '<id(-) {2}>',
+            '<id(2+2) {2}>',
+            '<id("a") {2}>',
+            '<id(\'a\') {2}>',
+            '<id(2) {2}>',
+            '<_id($n) {2}>',
+            '<id($n) 2}>',
+            '<id($n',
+            '<id($n ',
+            '<id($n)',
+            '<id($n) ',
+            '<id($n) {',
+            '<id($n) { ',
+            '<id($n) {2',
+            '<id($n) {2}',
+            '<id(nm nm) {2}>',
+            '<id($n) {}>',
+            '<id($n, $m ,) {2}>',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_expression(self):
 #        string = "<id[0 == 1 || 1] 'foo'>"
 #        ast = self.parser.parse(string)
@@ -435,26 +435,26 @@ class L20nParserTestCase(unittest.TestCase):
 #        #self.assertEqual(exp['expression']['name'], 'id')
 #        #self.assertEqual(exp['property'] , 'foo')
 #
-#    def test_expression_errors(self):
-#        strings = [
-#            '<id[1+()] "foo">',
-#            '<id[1<>2] "foo">',
-#            '<id[1+=2] "foo">',
-#            '<id[>2] "foo">',
-#            '<id[1==] "foo">',
-#            '<id[1+ "foo">',
-#            '<id[2==1+] "foo">',
-#            '<id[2==3+4 "fpp">',
-#            '<id[2==3+ "foo">',
-#            '<id[2>>2] "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_expression_errors(self):
+        strings = [
+            '<id[1+()] "foo">',
+            '<id[1<>2] "foo">',
+            '<id[1+=2] "foo">',
+            '<id[>2] "foo">',
+            '<id[1==] "foo">',
+            '<id[1+ "foo">',
+            '<id[2==1+] "foo">',
+            '<id[2==3+4 "fpp">',
+            '<id[2==3+ "foo">',
+            '<id[2>>2] "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_logical_expression(self):
 #        string = "<id[0 || 1] 'foo'>"
 #        ast = self.parser.parse(string)
@@ -574,41 +574,43 @@ class L20nParserTestCase(unittest.TestCase):
 #                raise AssertionError("Failed to raise parser error on: " +
 #                                     string)
 #
-#    def test_call_expression(self):
-#        string = "<id[foo()] 'foo'>"
-#        ast = self.parser.parse(string)
-#        exp = ast[0]['index'][0]
-#        self.assertEqual(exp['callee']['name'], 'foo')
-#        self.assertEqual(len(exp['arguments']), 0)
-#
-#        string = "<id[foo(d, e, f, g)] 'foo'>"
-#        ast = self.parser.parse(string)
-#        exp = ast[0]['index'][0]
-#        self.assertEqual(exp['callee']['name'], 'foo')
-#        self.assertEqual(len(exp['arguments']), 4)
-#        self.assertEqual(exp['arguments'][0]['name'], 'd')
-#        self.assertEqual(exp['arguments'][1]['name'], 'e')
-#        self.assertEqual(exp['arguments'][2]['name'], 'f')
-#        self.assertEqual(exp['arguments'][3]['name'], 'g')
-#
-#    def test_call_expression_errors(self):
-#        strings = [
-#            '<id[1+()] "foo">',
-#            '<id[foo(fo fo)] "foo">',
-#            '<id[foo(()] "foo">',
-#            '<id[foo(())] "foo">',
-#            '<id[foo())] "foo">',
-#            '<id[foo("ff)] "foo">',
-#            '<id[foo(ff")] "foo">',
-#            '<id[foo(a, b, )] "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_call_expression(self):
+        string = "<id[foo()] 'foo'>"
+        ast = self.parser.parse(string)
+        exp = ast[0]['$x'][0]
+        self.assertEqual(exp['t'], 'call')
+        self.assertEqual(exp['v']['t'], 'id')
+        self.assertEqual(exp['v']['v'], 'foo')
+        self.assertEqual(len(exp['a']), 0)
+
+        string = "<id[foo(d, e, f, g)] 'foo'>"
+        ast = self.parser.parse(string)
+        exp = ast[0]['$x'][0]
+        self.assertEqual(exp['v']['v'], 'foo')
+        self.assertEqual(len(exp['a']), 4)
+        self.assertEqual(exp['a'][0]['v'], 'd')
+        self.assertEqual(exp['a'][1]['v'], 'e')
+        self.assertEqual(exp['a'][2]['v'], 'f')
+        self.assertEqual(exp['a'][3]['v'], 'g')
+
+    def test_call_expression_errors(self):
+        strings = [
+            '<id[1+()] "foo">',
+            '<id[foo(fo fo)] "foo">',
+            '<id[foo(()] "foo">',
+            '<id[foo(())] "foo">',
+            '<id[foo())] "foo">',
+            '<id[foo("ff)] "foo">',
+            '<id[foo(ff")] "foo">',
+            '<id[foo(a, b, )] "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_member_expression(self):
 #        string = "<id[x['d']] 'foo'>"
 #        ast = self.parser.parse(string)
@@ -643,18 +645,18 @@ class L20nParserTestCase(unittest.TestCase):
 #        string = "<id[! (a?b:c)['d']['e']] 'foo' >"
 #        ast = self.parser.parse(string)
 #
-#    def test_member_expression_errors(self):
-#        strings = [
-#            '<id[x[[]] "foo">',
-#            '<id[x[] "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_member_expression_errors(self):
+        strings = [
+            '<id[x[[]] "foo">',
+            '<id[x[] "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_attr_expression(self):
 #        string = "<id[x::['d']] 'foo'>"
 #        ast = self.parser.parse(string)
@@ -668,26 +670,26 @@ class L20nParserTestCase(unittest.TestCase):
 #        self.assertEqual(exp['expression']['name'], 'x')
 #        self.assertEqual(exp['attribute']['name'], 'd')
 #
-#    def test_attr_expression_errors(self):
-#        strings = [
-#            '<id[x:::d] "foo">',
-#            '<id[x[::"d"]] "foo">',
-#            '<id[x[::::d]] "foo">',
-#            '<id[x:::[d]] "foo">',
-#            '<id[x.y::z] "foo">',
-#            '<id[x::y::z] "foo">',
-#            '<id[x.y::["z"]] "foo">',
-#            '<id[x::y::["z"]] "foo">',
-#            '<id[x::[1 "foo">',
-#            '<id[x()::attr1] "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_attr_expression_errors(self):
+        strings = [
+            '<id[x:::d] "foo">',
+            '<id[x[::"d"]] "foo">',
+            '<id[x[::::d]] "foo">',
+            '<id[x:::[d]] "foo">',
+            '<id[x.y::z] "foo">',
+            '<id[x::y::z] "foo">',
+            '<id[x.y::["z"]] "foo">',
+            '<id[x::y::["z"]] "foo">',
+            '<id[x::[1 "foo">',
+            '<id[x()::attr1] "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_parenthesis_expression(self):
 #        #from pudb import set_trace; set_trace()
 #        string = "<id[(1 + 2) * 3] 'foo'>"
@@ -724,24 +726,24 @@ class L20nParserTestCase(unittest.TestCase):
 #        self.assertEqual(exp['expression']['callee']['name'], 'a')
 #        self.assertEqual(exp['property']['name'], 'c')
 #
-#    def test_parenthesis_expression_errors(self):
-#        strings = [
-#            '<id[1+()] "foo">',
-#            '<id[(+)*(-)] "foo">',
-#            '<id[(!)] "foo">',
-#            '<id[(())] "foo">',
-#            '<id[(] "foo">',
-#            '<id[)] "foo">',
-#            '<id[1+(2] "foo">',
-#            '<id[a().c.[d]()] "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_parenthesis_expression_errors(self):
+        strings = [
+            '<id[1+()] "foo">',
+            '<id[(+)*(-)] "foo">',
+            '<id[(!)] "foo">',
+            '<id[(())] "foo">',
+            '<id[(] "foo">',
+            '<id[)] "foo">',
+            '<id[1+(2] "foo">',
+            '<id[a().c.[d]()] "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_literal_expression(self):
 #        string = "<id[012] 'foo'>"
 #        ast = self.parser.parse(string)
@@ -771,42 +773,42 @@ class L20nParserTestCase(unittest.TestCase):
 #        self.assertEqual(exp[0]['$v'], 'foo')
 #        self.assertEqual(exp[1]['$v'], 'foo2')
 #
-#    def test_value_expression_errors(self):
-#        strings = [
-#            '<id[[0, 1]] "foo">',
-#            '<id["foo] "foo">',
-#            '<id[foo"] "foo">',
-#            '<id[["foo]] "foo">',
-#            '<id[{"a": "foo"}] "foo">',
-#            '<id[{a: 0}] "foo">',
-#            '<id[{a: "foo"] "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: %s" +
-#                                     string)
-#
+    def test_value_expression_errors(self):
+        strings = [
+            '<id[[0, 1]] "foo">',
+            '<id["foo] "foo">',
+            '<id[foo"] "foo">',
+            '<id[["foo]] "foo">',
+            '<id[{"a": "foo"}] "foo">',
+            '<id[{a: 0}] "foo">',
+            '<id[{a: "foo"] "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: %s" +
+                                     string)
+
 #    def test_comment(self):
 #        string = "/* test */"
 #        ast = self.parser.parse(string)
 #        comment = ast[0]
 #        self.assertEqual(comment, ' test ')
 #
-#    def test_comment_errors(self):
-#        strings = [
-#            '/* foo ',
-#            'foo */',
-#            '<id /* test */ "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_comment_errors(self):
+        strings = [
+            '/* foo ',
+            'foo */',
+            '<id /* test */ "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_identifier(self):
 #        #string = "<id>"
 #        #ast = self.parser.parse(string)
@@ -819,20 +821,20 @@ class L20nParserTestCase(unittest.TestCase):
 #        #self.assertEqual(ast[0]['$i']['name'], "ID")
 #        pass
 #
-#    def test_identifier_errors(self):
-#        strings = [
-#            '<i`d "foo">',
-#            '<0d "foo">',
-#            '<09 "foo">',
-#            '<i!d "foo">',
-#        ]
-#        for string in strings:
-#            try:
-#                self.assertRaises(ParserError, self.parser.parse, string)
-#            except AssertionError:
-#                raise AssertionError("Failed to raise parser error on: " +
-#                                     string)
-#
+    def test_identifier_errors(self):
+        strings = [
+            '<i`d "foo">',
+            '<0d "foo">',
+            '<09 "foo">',
+            '<i!d "foo">',
+        ]
+        for string in strings:
+            try:
+                self.assertRaises(ParserError, self.parser.parse, string)
+            except AssertionError:
+                raise AssertionError("Failed to raise parser error on: " +
+                                     string)
+
 #    def test_import(self):
 #        string = "import('./foo.ast')"
 #        ast = self.parser.parse(string)
