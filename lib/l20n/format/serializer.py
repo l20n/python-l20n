@@ -13,6 +13,16 @@ class Serializer():
             string += self.dumpEntry(entry) + '\n'
         return string
 
+    def serializeString(self, ast):
+        string = ''
+
+        if type(ast) is dict:
+            string += self.dumpValue(ast, 0)
+        else:
+            string += self.dumpString(ast)
+
+        return string
+
     def dumpEntry(self, entry):
         return self.dumpEntity(entry)
 
@@ -53,7 +63,7 @@ class Serializer():
 
         if type(value) is dict:
             if 't' in value and value['t'] == 'overlay':
-                return self.dumpValue(value['v'])
+                return self.dumpValue(value['v'], depth)
             return self.dumpHash(value, depth)
 
     def dumpString(self, string):

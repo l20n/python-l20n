@@ -24,6 +24,21 @@ class Parser():
 
         return self.getL20n()
 
+    def parseString(self, string):
+        self._source = string
+        self._index = 0
+        self._length = len(string)
+
+        ast, overlay = self.getString(string[0], 1)
+
+        if overlay:
+            return {
+              'v': ast,
+              't': 'overlay'
+            }
+        else:
+            return ast
+
     def getL20n(self):
         ast = []
 
