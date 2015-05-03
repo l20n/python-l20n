@@ -359,12 +359,34 @@ class Parser():
     def getExpression(self):
         exp = self.getPrimaryExpression()
 
+        cc = ord(self._source[self._index]);
+
+        if cc == 91: # [
+            self._index += 1
+            exp = self.getPropertyExpression(exp)
+        elif cc == 40: # (
+            self._index += 1
+            exp = self.getCallExpression(exp)
+
+        return exp
+
+    def getPropertyExpression(self, idref):
         self.getWS()
 
-        if self._source[self._index] == '(':
-            self._index += 1
-            return self.getCallExpression(exp)
-        return exp
+        exp = self.getExpression()
+
+        self.getWS()
+
+        if self._source[self._index] != ']':
+            raise self.error('Expected "]"')
+
+        self._index += 1
+
+        return {
+            't': 'prop',
+            'e': idref,
+            'p': exp
+        }
 
     def getCallExpression(self, callee):
         self.getWS()

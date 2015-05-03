@@ -93,8 +93,16 @@ class Serializer():
     def dumpExpression(self, exp):
         if exp['t'] == 'call':
             return self.dumpCallExpression(exp)
+        elif exp['t'] == 'prop':
+            return self.dumpPropertyExpression(exp)
 
         return self.dumpPrimaryExpression(exp)
+
+    def dumpPropertyExpression(self, exp):
+        prop = self.dumpExpression(exp['p'])
+        idref = self.dumpExpression(exp['e'])
+
+        return '%s[%s]' % (idref, prop)
 
     def dumpCallExpression(self, exp):
         pexp = self.dumpPrimaryExpression(exp['v'])
