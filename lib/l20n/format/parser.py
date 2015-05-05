@@ -304,10 +304,13 @@ class Parser():
             if ch == '\\':
                 self._index += 1
                 ch2 = self._source[self._index]
-                if ch2 == 'u' or ch2 == opchar:
+                if ch2 == 'u' or \
+                   ch2 == opchar or \
+                   ch2 == '\\' or \
+                   (ch2 == '{' and self._source[self._index + 1] == '{'):
                     buf += self.unescapeString(ch2)
                 else:
-                    buf += ch2
+                    buf += ch + ch2
             elif ch == '{' and self._source[self._index + 1] == '{':
                     if body is None:
                         body = []
