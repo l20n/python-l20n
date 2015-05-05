@@ -13,7 +13,6 @@ MAX_PLACEABLES = 100
 
 class Parser():
     _patterns = {
-        'complexId': re.compile(r'[A-Za-z_][\w\.]*'),
         'identifier': re.compile(r'[A-Za-z_]\w*'),
     }
 
@@ -167,17 +166,6 @@ class Parser():
         self._index += match.end()
         return match.group(0)
 
-    def getComplexId(self):
-        reId = self._patterns['complexId']
-
-        match = reId.match(self._source[self._index:])
-
-        if not match:
-            raise self.error('Identifier has to start with [a-zA-Z_]')
-
-        self._index += match.end()
-        return match.group(0)
-
     def getString(self, opchar, opcharLen):
         opcharPos = self._source.find(opchar, self._index + opcharLen)
 
@@ -271,9 +259,7 @@ class Parser():
             hash['__default'] = defItem
         return hash
 
-    def unescapeString(self):
-        self._index += 1
-        ch = self._source[self._index]
+    def unescapeString(self, ch):
         if ch == 'u':
             ucode = ''
             for i in range(0, 4):
@@ -316,7 +302,12 @@ class Parser():
             self._index += 1
             ch = self._source[self._index]
             if ch == '\\':
-                buf += self.unescapeString()
+                self._index += 1
+                ch2 = self._source[self._index]
+                if ch2 == 'u' or ch2 == opchar:
+                    buf += self.unescapeString(ch2)
+                else:
+                    buf += ch2
             elif ch == '{' and self._source[self._index + 1] == '{':
                     if body is None:
                         body = []
@@ -359,33 +350,36 @@ class Parser():
     def getExpression(self):
         exp = self.getPrimaryExpression()
 
-        cc = ord(self._source[self._index]);
+        while True:
+            cc = ord(self._source[self._index]);
 
-        if cc == 91: # [
-            self._index += 1
-            exp = self.getPropertyExpression(exp)
-        elif cc == 40: # (
-            self._index += 1
-            exp = self.getCallExpression(exp)
+            if cc == 46 or cc == 91: # [
+                self._index += 1
+                exp = self.getPropertyExpression(exp, cc == 91)
+            elif cc == 40: # (
+                self._index += 1
+                exp = self.getCallExpression(exp)
+            else:
+                break
 
         return exp
 
-    def getPropertyExpression(self, idref):
-        self.getWS()
-
-        exp = self.getExpression()
-
-        self.getWS()
-
-        if self._source[self._index] != ']':
-            raise self.error('Expected "]"')
-
-        self._index += 1
+    def getPropertyExpression(self, idref, computed):
+        if computed:
+            self.getWS()
+            exp = self.getExpression()
+            self.getWS()
+            if self._source[self._index] != ']':
+                raise self.error('Expected "]"')
+            self._index += 1
+        else:
+            exp = self.getIdentifier()
 
         return {
             't': 'prop',
             'e': idref,
-            'p': exp
+            'p': exp,
+            'c': computed
         }
 
     def getCallExpression(self, callee):
@@ -407,12 +401,12 @@ class Parser():
         if cc == 36:
             self._index += 1
             prim['t'] = 'var'
-            prim['v'] = self.getComplexId()
+            prim['v'] = self.getIdentifier()
         # global: @
         elif cc == 64:
             self._index += 1
             prim['t'] = 'glob'
-            prim['v'] = self.getComplexId()
+            prim['v'] = self.getIdentifier()
         else:
             prim['t'] = 'id'
             prim['v'] = self.getIdentifier()

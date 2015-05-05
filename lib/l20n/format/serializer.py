@@ -99,13 +99,17 @@ class Serializer():
         return self.dumpPrimaryExpression(exp)
 
     def dumpPropertyExpression(self, exp):
-        prop = self.dumpExpression(exp['p'])
         idref = self.dumpExpression(exp['e'])
 
-        return '%s[%s]' % (idref, prop)
+        if exp['c']:
+            prop = self.dumpExpression(exp['p'])
+            return '%s[%s]' % (idref, prop)
+        
+        prop = self.dumpIdentifier(exp['p'])
+        return '%s.%s' % (idref, prop)
 
     def dumpCallExpression(self, exp):
-        pexp = self.dumpPrimaryExpression(exp['v'])
+        pexp = self.dumpExpression(exp['v'])
 
         attrs = self.dumpItemList(exp['a'], self.dumpExpression)
 
@@ -114,6 +118,9 @@ class Serializer():
 
     def dumpPrimaryExpression(self, exp):
         ret = ''
+
+        if type(exp) is str:
+            return exp
 
         if exp['t'] == 'glob':
             ret += '@'
