@@ -1,5 +1,3 @@
-import re
-
 
 class ParserError(Exception):
     def __init__(self, message, pos, context):
@@ -12,10 +10,6 @@ MAX_PLACEABLES = 100
 
 
 class Parser():
-    _patterns = {
-        'identifier': re.compile(r'[A-Za-z_]\w*'),
-    }
-
     def parse(self, string):
         self._source = string
         self._index = 0
@@ -156,15 +150,33 @@ class Parser():
         return pos != self._index
 
     def getIdentifier(self):
-        reId = self._patterns['identifier']
+        start = self._index
 
-        match = reId.match(self._source[self._index:])
+        if self._index < self._length:
+            cc = ord(self._source[self._index])
+        else:
+            cc = -1
 
-        if not match:
+        # a-z | A-Z | _
+        if (cc >= 97 and cc <= 122) or \
+           (cc >= 65 and cc <= 90) or \
+           cc == 95:
+            self._index += 1
+            cc = ord(self._source[self._index])
+        else:
             raise self.error('Identifier has to start with [a-zA-Z_]')
 
-        self._index += match.end()
-        return match.group(0)
+        # a-z | A-Z | 0-9 | _
+        while (cc >= 97 and cc <= 122) or \
+              (cc >= 65 and cc <= 90) or \
+              (cc >= 48 and cc <= 57) or \
+              cc == 95:
+            self._index += 1
+            if self._length <= self._index:
+                break
+            cc = ord(self._source[self._index])
+
+        return self._source[start: self._index]
 
     def getString(self, opchar, opcharLen):
         opcharPos = self._source.find(opchar, self._index + opcharLen)
