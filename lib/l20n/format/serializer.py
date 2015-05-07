@@ -62,7 +62,7 @@ class Serializer():
             return self.dumpComplexString(value)
 
         if type(value) is dict:
-            if 't' in value and value['t'] == 'overlay':
+            if 't' in value and value['o'] is True:
                 return self.dumpValue(value['v'], depth)
             return self.dumpHash(value, depth)
 

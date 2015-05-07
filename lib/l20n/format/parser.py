@@ -33,7 +33,7 @@ class Parser():
         if overlay:
             return {
               'v': ast,
-              't': 'overlay'
+              'o': True
             }
         else:
             return ast
@@ -128,7 +128,7 @@ class Parser():
             if index:
                 value['x'] = index
             if overlay:
-                value['t'] = 'overlay'
+                value['o'] = True
             return value
         return val
 
