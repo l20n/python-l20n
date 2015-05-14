@@ -73,17 +73,9 @@ class L20nParserTestCase(unittest.TestCase):
         ast = self.parser.parse(string)
         self.assertEqual(ast[0]['$v'], "test {{ more")
 
-        string = "<id 'test {\{ more'>"
-        ast = self.parser.parse(string)
-        self.assertEqual(ast[0]['$v'], "test {\\{ more")
-
         string = "<id 'test \\\\ more'>"
         ast = self.parser.parse(string)
         self.assertEqual(ast[0]['$v'], "test \ more")
-
-        string = "<id 'test \\a more'>"
-        ast = self.parser.parse(string)
-        self.assertEqual(ast[0]['$v'], "test \\a more")
 
     def test_string_unicode(self):
         string = u"<id 'foo \\u00bd = \u00bd'>"

@@ -23,7 +23,7 @@ def print_l20n(fileType, data):
         l20nParser = l20n.format.parser.Parser()
         print('----- AST -----')
         ast = l20nParser.parse(data)
-        print(json.dumps(ast, indent=2))
+        print(json.dumps(ast, indent=2, ensure_ascii=False))
         print('--------------------')
         result = l20nSerializer.serialize(ast)
     

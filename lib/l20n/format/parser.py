@@ -10,10 +10,11 @@ MAX_PLACEABLES = 100
 
 
 class Parser():
-    def parse(self, string):
+    def parse(self, string, simple = False):
         self._source = string
         self._index = 0
         self._length = len(string)
+        self.simpleMode = simple
 
         return self.getL20n()
 
@@ -38,7 +39,10 @@ class Parser():
         self.getWS()
 
         while self._index < self._length:
-            ast.append(self.getEntry())
+            e = self.getEntry()
+
+            if e:
+                ast.append(e)
             if self._index < self._length:
                 self.getWS()
         return ast
@@ -59,6 +63,10 @@ class Parser():
                                       self.getItemList(self.getExpression,
                                                        ']'))
             return self.getEntity(id, None)
+
+        if ord(self._source[self._index]) == 47 and \
+           ord(self._source[self._index + 1]) == 42:
+            return self.getComment()
         raise self.error('Invalid entry')
 
     def getEntity(self, id, index):
@@ -271,6 +279,18 @@ class Parser():
             hash['__default'] = defItem
         return hash
 
+    def getComment(self):
+        self._index += 2
+        start = self._index
+
+        end = self._source.find('*/', start)
+
+        if end == -1:
+            raise self.error('Comment without closing tag')
+
+        self._index = end + 2
+        return
+
     def unescapeString(self, ch):
         if ch == 'u':
             ucode = ''
@@ -309,6 +329,8 @@ class Parser():
 
         self._index += opcharLen - 1
 
+        start = self._index + 1
+
         walkChars = True
         while walkChars:
             self._index += 1
@@ -322,7 +344,7 @@ class Parser():
                    (ch2 == '{' and self._source[self._index + 1] == '{'):
                     buf += self.unescapeString(ch2)
                 else:
-                    buf += ch + ch2
+                    raise self.error('Illegal unicode escape sequence')
             elif ch == '{' and self._source[self._index + 1] == '{':
                     if body is None:
                         body = []
@@ -353,6 +375,11 @@ class Parser():
                     buf += ch
                     if self._index + 1 >= self._length:
                         raise self.error('Unclosed string literal')
+
+        if self.simpleMode:
+            if len(buf) and self.isOverlay(buf):
+                overlay = True
+            return [self._source[start : self._index - 1], overlay]
 
         if body is None:
             return [buf, self.isOverlay(buf)]

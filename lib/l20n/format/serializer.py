@@ -67,7 +67,7 @@ class Serializer():
             return self.dumpHash(value, depth)
 
     def dumpString(self, string):
-        return '"' + string.replace('"', '\\"') + '"'
+        return '"' + string + '"'
 
     def dumpComplexString(self, chunks):
         string = '"'
