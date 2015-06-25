@@ -52,7 +52,7 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(resource.body[0].value.source, 'str\\"ing')
         self.assertEqual(resource.body[0].value.content[0], 'str"ing')
 
-        string = "<id 'str\\'ing'>"
+        string = "<id 'str\\'ing'> "
         resource = self.parser.parse(string)
         self.assertEqual(resource.body[0].value.source, "str\\'ing")
         self.assertEqual(resource.body[0].value.content[0], 'str\'ing')

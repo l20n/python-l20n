@@ -116,11 +116,10 @@ class L20nParser():
         return None
 
     def getWS(self):
-        cc = ord(self._source[self._index])
+        cc = self._getcc()
 
         while cc == 32 or cc == 10 or cc == 9 or cc == 13:
-            self._index += 1
-            cc = ord(self._source[self._index])
+            cc = self._getnextcc()
 
     def getRequiredWS(self):
         pos = self._index

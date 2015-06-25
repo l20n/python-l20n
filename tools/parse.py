@@ -13,9 +13,9 @@ def read_file(path):
     return text
 
 def print_ast(fileType, data):
-    l20nParser = l20n.format.parser.Parser()
+    l20nParser = l20n.format.parser.L20nParser()
     ast = l20nParser.parse(data)
-    print(json.dumps(ast, indent=2, ensure_ascii=False))
+    print(json.dumps(ast.toJSON(), indent=2, ensure_ascii=False))
 if __name__ == "__main__":
       file_type = 'l20n'
       f = read_file(sys.argv[1])
