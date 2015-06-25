@@ -15,6 +15,8 @@ class Node(object):
     def toJSON(self):
         fields = {}
         for key in vars(self):
+            if key[0] == '_':
+                continue
             attr = getattr(self, key)
             fields[key] = attr2json(attr)
         return fields
@@ -56,6 +58,8 @@ class String(Value):
         super(String, self).__init__()
         self.source = source
         self.content = content
+
+        self._opchar = '"'
 
 class Hash(Value):
     def __init__(self, items):
@@ -113,5 +117,5 @@ class CallExpression(Expression):
 
 class JunkEntry(Node):
     def __init__(self, content):
-        super(Node, self).__init__()
+        super(JunkEntry, self).__init__()
         self.content = content

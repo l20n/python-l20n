@@ -359,12 +359,12 @@ class L20nParser():
 
         if ch == '$':
             self._index += 1
-            variable = ast.Variable(self.getIdentifier)
+            variable = ast.Variable(self.getIdentifier())
             variable.setPosition(start, self._index)
             return variable
         elif ch == '@':
             self._index += 1
-            glob = ast.Global(self.getIdentifier)
+            glob = ast.Global(self.getIdentifier())
             glob.setPosition(start, self._index)
             return glob
         else:
@@ -398,8 +398,8 @@ class L20nParser():
     def error(self, message):
         pos = self._index
 
-        start = self._source.rfind('<', pos - 1)
-        lastClose = self._source.rfind('>', pos - 1)
+        start = self._source.rfind('<', 0, pos - 1)
+        lastClose = self._source.rfind('>', 0, pos - 1)
         start = lastClose + 1 if lastClose > start else start
         context = self._source[start : pos + 10]
 
