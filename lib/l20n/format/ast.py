@@ -52,10 +52,10 @@ class Value(Node):
         super().__init__()
 
 class String(Value):
-    def __init__(self, source, string):
+    def __init__(self, source, content):
         super().__init__()
         self.source = source
-        self.string = string
+        self.content = content
 
 class Hash(Value):
     def __init__(self, items):

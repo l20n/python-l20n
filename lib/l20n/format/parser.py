@@ -1,5 +1,5 @@
 
-import ast
+from . import ast
 
 class ParserError(Exception):
     def __init__(self, message, pos, context):
@@ -10,26 +10,48 @@ class ParserError(Exception):
 
 MAX_PLACEABLES = 100
 
-
 class L20nParser():
     def parse(self, string):
         self._source = string
         self._index = 0
         self._length = len(string)
-        self._curEntryStart = 0;
+        self._curEntryStart = 0
 
         return self.getResource()
+
+    def _getch(self):
+        if self._index >= self._length:
+            return ''
+        return self._source[self._index]
+
+    def _getnextch(self):
+        self._index += 1
+        if self._index >= self._length:
+            return ''
+        return self._source[self._index]
+
+    def _getcc(self):
+        if self._index >= self._length:
+            return -1
+        return ord(self._source[self._index])
+
+    def _getnextcc(self):
+        self._index += 1
+        if self._index >= self._length:
+            return -1
+        return ord(self._source[self._index])
 
     def getResource(self):
         resource = ast.Resource()
         resource.setPosition(0, self._length)
+        resource._errors = []
 
         self.getWS()
         while self._index < self._length:
             try:
                 resource.body.append(self.getEntry())
             except ParserError as e:
-                print(e)
+                resource._errors.append(e)
                 resource.body.append(self.getJunkEntry())
             
             if self._index < self._length:
@@ -40,17 +62,17 @@ class L20nParser():
     def getEntry(self):
         self._curEntryStart = self._index
 
-        if self._source[self._index] == '<':
+        if self._getch() == '<':
             self._index += 1
             id = self.getIdentifier()
-            if self._source[self._index] == '[':
+            if self._getch() == '[':
                 self._index += 1
                 return self.getEntity(id,
                                       self.getItemList(self.getExpression,
                                                        ']'))
             return self.getEntity(id)
 
-        if self._source[self._index: self._index + 1] == '/*':
+        if self._source.startswith('/*', self._index):
             return self.getComment()
 
         raise self.error('Invalid entry')
@@ -59,8 +81,8 @@ class L20nParser():
         if not self.getRequiredWS():
             raise self.error('Expected white space')
 
-        ch = self._source[self._index]
-        value = self.getValue(ch)
+        ch = self._getch()
+        value = self.getValue(ch, index == None)
         attrs = None
         
         if value == None:
@@ -80,16 +102,18 @@ class L20nParser():
         entity.setPosition(self._curEntryStart, self._index)
         return entity
 
-    def getValue(self, ch):
+    def getValue(self, ch = None, optional = False):
         if ch is None:
             ch = self._source[self._index]
 
         if ch == "'" or ch == '"':
-            val = self.getString(ch, 1)
+            return self.getString(ch, 1)
         elif ch == '{':
-            val = self.getHash()
+            return self.getHash()
 
-        return val
+        if not optional:
+            raise self.error('Unknown value type')
+        return None
 
     def getWS(self):
         cc = ord(self._source[self._index])
@@ -100,23 +124,21 @@ class L20nParser():
 
     def getRequiredWS(self):
         pos = self._index
-        cc = ord(self._source[self._index])
+        cc = self._getcc()
 
         while cc == 32 or cc == 10 or cc == 9 or cc == 13:
-            self._index += 1
-            cc = ord(self._source[self._index])
+            cc = self._getnextcc()
         return pos != self._index
 
     def getIdentifier(self):
         start = self._index
-        cc = ord(self._source[self._index])
+        cc = self._getcc()
 
         # a-z | A-Z | _
         if (cc >= 97 and cc <= 122) or \
            (cc >= 65 and cc <= 90) or \
            cc == 95:
-            self._index += 1
-            cc = ord(self._source[self._index])
+            cc = self._getnextcc()
         else:
             raise self.error('Identifier has to start with [a-zA-Z_]')
 
@@ -125,8 +147,7 @@ class L20nParser():
               (cc >= 65 and cc <= 90) or \
               (cc >= 48 and cc <= 57) or \
               cc == 95:
-            self._index += 1
-            cc = ord(self._source[self._index])
+            cc = self._getnextcc()
 
         id = ast.Identifier(self._source[start : self._index])
         id.setPosition(start, self._index)
@@ -180,7 +201,7 @@ class L20nParser():
                 self.getWS()
                 body.append(self.getExpression())
                 self.getWS()
-                if self._source[self._index : self._index + 1] != '}}':
+                if not self._source.startswith('}}', self._index):
                     raise self.error('Expected "}}"')
                 self._index += 1
                 placeables += 1
@@ -198,6 +219,7 @@ class L20nParser():
 
         string = ast.String(self._source[start : self._index - 1], body)
         string.setPosition(start, self._index)
+        string._opchar = opchar
 
         return string
 
@@ -218,6 +240,7 @@ class L20nParser():
     def getAttribute(self):
         start = self._index
         key = self.getIdentifier()
+        index = None
 
         if self._source[self._index] == '[':
             self._index += 1
@@ -319,7 +342,7 @@ class L20nParser():
         else:
             exp = self.getIdentifier()
 
-        propExpr = ast.PropertyExpresion(idref, exp, computed)
+        propExpr = ast.PropertyExpression(idref, exp, computed)
         propExpr.setPosition(start, self._index)
         return propExpr
 
@@ -397,11 +420,3 @@ class L20nParser():
         self._index = nextEntry
 
         return ast.JunkEntry(self._source[self._curEntryStart : nextEntry])
-
-l20nCode = '<id "value">'
-
-l20nParser = L20nParser()
-ast = l20nParser.parse(l20nCode)
-
-import json
-print(json.dumps(ast.toJSON(), indent=2))
