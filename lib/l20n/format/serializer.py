@@ -1,3 +1,4 @@
+from . import ast
 
 class SerializerError(Exception):
     def __init__(self, message, pos, context):
@@ -7,9 +8,9 @@ class SerializerError(Exception):
         self.context = context
 
 class Serializer():
-    def serialize(self, ast):
+    def serialize(self, resource):
         string = ''
-        for entry in ast:
+        for entry in resource.body:
             string += self.dumpEntry(entry) + '\n'
         return string
 
@@ -27,57 +28,38 @@ class Serializer():
         return self.dumpEntity(entry)
 
     def dumpEntity(self, entity):
-        ident = ''
-        index = ''
-        val = ''
-        attrs = {}
+        ident = self.dumpIdentifier(entity.id)
+        index = self.dumpIndex(entity.index) if entity.index else ''
+        val = self.dumpValue(entity.value, 0)
 
-        for key in entity.keys():
-            if key == '$v':
-                val = entity['$v']
-            elif key == '$x':
-                index = self.dumpIndex(entity['$x'])
-            elif key == '$i':
-                ident = self.dumpIdentifier(entity['$i'])
-            else:
-                attrs[key] = entity[key]
-
-        if len(attrs) == 0:
-            return '<' + ident + index + ' ' + self.dumpValue(val, 0) + '>'
+        if len(entity.attrs) == 0:
+            return '<' + ident + index + ' ' + val + '>'
         else:
-            return '<' + ident + index + ' ' + self.dumpValue(val, 0) + \
-                    '\n' + self.dumpAttributes(attrs) + '>'
+            return '<' + ident + index + ' ' + val + \
+                    '\n' + self.dumpAttributes(entity.attrs) + '>'
 
     def dumpIdentifier(self, ident):
-        return ident
+        return ident.name
 
     def dumpValue(self, value, depth):
         if value is None:
             return ''
 
-        if type(value) is str or type(value) is unicode:
+        if isinstance(value, ast.String):
             return self.dumpString(value)
 
-        if type(value) is list:
-            return self.dumpComplexString(value)
-
-        if type(value) is dict:
-            if 't' in value and value['o'] is True:
-                return self.dumpValue(value['v'], depth)
+        if isinstance(value, ast.Hash):
             return self.dumpHash(value, depth)
 
     def dumpString(self, string):
-        return '"' + string + '"'
+        ret = '"'
 
-    def dumpComplexString(self, chunks):
-        string = '"'
-
-        for chunk in chunks:
+        for chunk in string.content:
             if type(chunk) is str or type(chunk) is unicode:
-                string += chunk.replace('"', '\\"')
+                ret += chunk.replace('"', '\\"')
             else:
-                string += '{{ ' + self.dumpExpression(chunk) + ' }}'
-        return string + '"'
+                ret += '{{ ' + self.dumpExpression(chunk) + ' }}'
+        return ret + '"'
 
     def dumpAttributes(self, attrs):
         string = ''
@@ -91,27 +73,27 @@ class Serializer():
         return string
 
     def dumpExpression(self, exp):
-        if exp['t'] == 'call':
+        if isinstance(exp, ast.CallExpression):
             return self.dumpCallExpression(exp)
-        elif exp['t'] == 'prop':
+        elif isinstance(exp, ast.PropertyExpression):
             return self.dumpPropertyExpression(exp)
 
         return self.dumpPrimaryExpression(exp)
 
     def dumpPropertyExpression(self, exp):
-        idref = self.dumpExpression(exp['e'])
+        idref = self.dumpExpression(exp.idref)
 
-        if exp['c']:
-            prop = self.dumpExpression(exp['p'])
+        if exp.computed:
+            prop = self.dumpExpression(exp.exp)
             return '%s[%s]' % (idref, prop)
         
-        prop = self.dumpIdentifier(exp['p'])
+        prop = self.dumpIdentifier(exp.exp)
         return '%s.%s' % (idref, prop)
 
     def dumpCallExpression(self, exp):
-        pexp = self.dumpExpression(exp['v'])
+        pexp = self.dumpExpression(exp.callee)
 
-        attrs = self.dumpItemList(exp['a'], self.dumpExpression)
+        attrs = self.dumpItemList(exp.args, self.dumpExpression)
 
         pexp += '(' + attrs + ')'
         return pexp
@@ -122,14 +104,14 @@ class Serializer():
         if type(exp) is str:
             return exp
 
-        if exp['t'] == 'glob':
+        if isinstance(exp, ast.Global):
             ret += '@'
-            ret += exp['v']
-        elif exp['t'] == 'var':
+            ret += self.dumpIdentifier(exp.name)
+        elif isinstance(exp, ast.Variable):
             ret += '$'
-            ret += exp['v']
-        elif exp['t'] == 'id':
-            ret += exp['v']
+            ret += self.dumpIdentifier(exp.name)
+        elif isinstance(exp, ast.Identifier):
+            ret += self.dumpIdentifier(exp)
         else:
             raise SerializerError('Unknown primary expression')
 
@@ -139,19 +121,12 @@ class Serializer():
         items = []
         string = ''
 
-        defIndex = None
+        for item in hashValue.items:
+            indent = ' *' if item.default else '  '
 
-        if '__default' in hashValue:
-            defIndex = hashValue['__default']
-
-        for key in hashValue.keys():
-            indent = '  '
-            if key[0:2] == '__':
-                continue
-
-            if key == defIndex:
-                indent = ' *'
-            string = indent + key + ': ' + self.dumpValue(hashValue[key], depth + 1)
+            #if key == defIndex:
+            #    indent = ' *'
+            string = indent + self.dumpIdentifier(item.id) + ': ' + self.dumpValue(item.value, depth + 1)
             items.append(string)
 
         indent = '  ' * depth
