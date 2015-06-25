@@ -1,4 +1,6 @@
 
+import ast
+
 class ParserError(Exception):
     def __init__(self, message, pos, context):
         self.name = 'ParserError'
@@ -9,88 +11,63 @@ class ParserError(Exception):
 MAX_PLACEABLES = 100
 
 
-class Parser():
-    def parse(self, string, simple = False):
+class L20nParser():
+    def parse(self, string):
         self._source = string
         self._index = 0
         self._length = len(string)
-        self.simpleMode = simple
+        self._curEntryStart = 0;
 
-        return self.getL20n()
+        return self.getResource()
 
-    def parseString(self, string):
-        self._source = string
-        self._index = 0
-        self._length = len(string)
-
-        ast, overlay = self.getString(string[0], 1)
-
-        if overlay:
-            return {
-              'v': ast,
-              'o': True
-            }
-        else:
-            return ast
-
-    def getL20n(self):
-        ast = []
+    def getResource(self):
+        resource = ast.Resource()
+        resource.setPosition(0, self._length)
 
         self.getWS()
-
         while self._index < self._length:
-            e = self.getEntry()
-
-            if e:
-                ast.append(e)
+            try:
+                resource.body.append(self.getEntry())
+            except ParserError as e:
+                print(e)
+                resource.body.append(self.getJunkEntry())
+            
             if self._index < self._length:
                 self.getWS()
-        return ast
+
+        return resource
 
     def getEntry(self):
-        # 66 === '<'
-        if ord(self._source[self._index]) == 60:
+        self._curEntryStart = self._index
+
+        if self._source[self._index] == '<':
             self._index += 1
             id = self.getIdentifier()
-            if self._index < self._length:
-                cc = ord(self._source[self._index])
-            else:
-                cc = None
-            # 91 === '['
-            if cc == 91:
+            if self._source[self._index] == '[':
                 self._index += 1
                 return self.getEntity(id,
                                       self.getItemList(self.getExpression,
                                                        ']'))
-            return self.getEntity(id, None)
+            return self.getEntity(id)
 
-        if ord(self._source[self._index]) == 47 and \
-           ord(self._source[self._index + 1]) == 42:
+        if self._source[self._index: self._index + 1] == '/*':
             return self.getComment()
+
         raise self.error('Invalid entry')
 
-    def getEntity(self, id, index):
-        entity = {'$i': id}
-
-        if index:
-            entity['$x'] = index
-
+    def getEntity(self, id, index = None):
         if not self.getRequiredWS():
             raise self.error('Expected white space')
 
-        if self._length > self._index:
-            ch = self._source[self._index]
-        else:
-            ch = None
-        value = self.getValue(index is None, ch)
+        ch = self._source[self._index]
+        value = self.getValue(ch)
         attrs = None
-
-        if value is None:
+        
+        if value == None:
             if ch == '>':
                 raise self.error('Expected ">"')
             attrs = self.getAttributes()
         else:
-            entity['$v'] = value
             ws1 = self.getRequiredWS()
             if not self._source[self._index] == '>':
                 if not ws1:
@@ -98,40 +75,20 @@ class Parser():
                 attrs = self.getAttributes()
 
         self._index += 1
-        if attrs:
-            for key in attrs:
-                entity[key] = attrs[key]
 
+        entity = ast.Entity(id, value, index, attrs)
+        entity.setPosition(self._curEntryStart, self._index)
         return entity
 
-    def getValue(self, optional=False, ch=None, index=None):
-        overlay = False
-
+    def getValue(self, ch):
         if ch is None:
-            if self._length > self._index:
-                ch = self._source[self._index]
-            else:
-                ch = None
+            ch = self._source[self._index]
+
         if ch == "'" or ch == '"':
             val = self.getString(ch, 1)
-            overlay = val[1]
-            val = val[0]
         elif ch == '{':
             val = self.getHash()
-        else:
-            if not optional:
-                raise self.error('Unknown value type')
-            return None
 
-        if index or overlay:
-            value = {}
-            value['v'] = val
-
-            if index:
-                value['x'] = index
-            if overlay:
-                value['o'] = True
-            return value
         return val
 
     def getWS(self):
@@ -139,31 +96,20 @@ class Parser():
 
         while cc == 32 or cc == 10 or cc == 9 or cc == 13:
             self._index += 1
-            if self._length <= self._index:
-                break
             cc = ord(self._source[self._index])
 
     def getRequiredWS(self):
         pos = self._index
-        if self._length > self._index:
-            cc = ord(self._source[self._index])
-        else:
-            return False
+        cc = ord(self._source[self._index])
 
         while cc == 32 or cc == 10 or cc == 9 or cc == 13:
             self._index += 1
-            if self._length <= self._index:
-                break
             cc = ord(self._source[self._index])
         return pos != self._index
 
     def getIdentifier(self):
         start = self._index
-
-        if self._index < self._length:
-            cc = ord(self._source[self._index])
-        else:
-            cc = -1
+        cc = ord(self._source[self._index])
 
         # a-z | A-Z | _
         if (cc >= 97 and cc <= 122) or \
@@ -180,36 +126,87 @@ class Parser():
               (cc >= 48 and cc <= 57) or \
               cc == 95:
             self._index += 1
-            if self._length <= self._index:
-                break
             cc = ord(self._source[self._index])
 
-        return self._source[start: self._index]
+        id = ast.Identifier(self._source[start : self._index])
+        id.setPosition(start, self._index)
+        return id
+
+    def getUnicodeChar(self):
+        for i in range(0, 4):
+            self._index += 1
+            cc = ord(self._source[self._index])
+            if (cc > 96 and cc < 103) or \
+               (cc > 64 and cc < 71) or \
+               (cc > 47 and cc < 58):
+                continue
+            raise self.error('Illegal unicode escape sequence')
+        return '\\u' + self._source[self._index - 3 : self._index + 1]
 
     def getString(self, opchar, opcharLen):
-        opcharPos = self._source.find(opchar, self._index + opcharLen)
+        body = []
+        buf = ''
+        placeables = 0
 
-        if opcharPos == -1:
-            raise self.error('Unclosed literal string')
-        buf = self._source[self._index + opcharLen: opcharPos]
+        self._index += opcharLen - 1
 
-        testPos = buf.find('{{')
-        if testPos != -1:
-            return self.getComplexString(opchar, opcharLen)
+        start = self._index + 1
 
-        testPos = buf.find('\\')
-        if testPos != -1:
-            return self.getComplexString(opchar, opcharLen)
+        closed = False
 
-        self._index = opcharPos + opcharLen
-        return [buf, self.isOverlay(buf)]
+        while not closed:
+            self._index += 1
+            ch = self._source[self._index]
+            if ch == '\\':
+                self._index += 1
+                ch2 = self._source[self._index]
+                if ch2 == 'u':
+                    buf += self.getUnicodeChar()
+                elif ch2 == opchar or ch2 == '\\':
+                    buf += ch2
+                elif (ch2 == '{' and self._source[self._index + 1] == '{'):
+                    buf += '{'
+                else:
+                    raise self.error('Illegal unicode escape sequence')
+            elif ch == '{' and self._source[self._index + 1] == '{':
+                if placeables > MAX_PLACEABLES - 1:
+                    raise self.error(
+                        'Too many placeables, maximum allowed is ' +
+                        MAX_PLACEABLES)
+                if len(buf):
+                    body.append(buf)
+                    buf = ''
+                self._index += 2
+                self.getWS()
+                body.append(self.getExpression())
+                self.getWS()
+                if self._source[self._index : self._index + 1] != '}}':
+                    raise self.error('Expected "}}"')
+                self._index += 1
+                placeables += 1
+            else:
+                if ch == opchar:
+                    self._index += 1
+                    closed = True
+                else:
+                    buf += ch
+                    if self._index + 1 >= self._length:
+                        raise self.error('Unclosed string literal')
+
+        if len(buf):
+            body.append(buf)
+
+        string = ast.String(self._source[start : self._index - 1], body)
+        string.setPosition(start, self._index)
+
+        return string
 
     def getAttributes(self):
-        attrs = {}
+        attrs = []
 
         while True:
-            attr = self.getKVPWithIndex()
-            attrs[attr[0]] = attr[1]
+            attr = self.getAttribute()
+            attrs.append(attr)
             ws1 = self.getRequiredWS()
             ch = self._source[self._index]
             if ch == '>':
@@ -218,18 +215,9 @@ class Parser():
                 raise self.error('Expected ">"')
         return attrs
 
-    def getKVP(self):
+    def getAttribute(self):
+        start = self._index
         key = self.getIdentifier()
-        self.getWS()
-        if self._source[self._index] != ':':
-            raise self.error('Expected ":"')
-        self._index += 1
-        self.getWS()
-        return [key, self.getValue()]
-
-    def getKVPWithIndex(self, type=None):
-        key = self.getIdentifier()
-        index = []
 
         if self._source[self._index] == '[':
             self._index += 1
@@ -240,31 +228,23 @@ class Parser():
             raise self.error('Expected ":"')
         self._index += 1
         self.getWS()
-        return [key, self.getValue(False, None, index)]
+
+        attr = ast.Attribute(key, self.getValue(), index)
+        attr.setPosition(start, self._index)
+        return attr
 
     def getHash(self):
+        start = self._index
+        items = []
+
         self._index += 1
         self.getWS()
-        defItem = None
-        hi = None
-        comma = None
-        hash = {}
 
         while True:
-            isDefItem = False
-            if self._source[self._index] == '*':
-                self._index += 1
-                if defItem is not None:
-                    raise self.error('Default item redefinition forbidden')
-                isDefItem = True
-            hi = self.getKVP()
-            hash[hi[0]] = hi[1]
-            if isDefItem:
-                defItem = hi[0]
+            items.append(self.getHashItem())
             self.getWS()
 
             comma = self._source[self._index] == ','
-
             if comma:
                 self._index += 1
                 self.getWS()
@@ -275,138 +255,60 @@ class Parser():
             if not comma:
                 raise self.error('Expected "}"')
 
-        if defItem is not None:
-            hash['__default'] = defItem
+        hash = ast.Hash(items)
+        hash.setPosition(start, self._index)
         return hash
+
+    def getHashItem(self):
+        start = self._index
+
+        defItem = False
+        if self._source[self._index] == '*':
+            self._index += 1
+            defItem = True
+
+        key = self.getIdentifier()
+        self.getWS()
+        if self._source[self._index] != ':':
+            raise self.error('Expected ":"')
+        self._index += 1
+        self.getWS()
+
+        hashItem = ast.HashItem(key, self.getValue(), defItem)
+        hashItem.setPosition(start, self._index)
+        return hashItem
 
     def getComment(self):
         self._index += 2
         start = self._index
-
         end = self._source.find('*/', start)
 
         if end == -1:
             raise self.error('Comment without closing tag')
 
         self._index = end + 2
-        return
-
-    def unescapeString(self, ch):
-        if ch == 'u':
-            ucode = ''
-            for i in range(0, 4):
-                self._index += 1
-                ch = self._source[self._index]
-                cc = ord(ch[0])
-                if (cc > 96 and cc < 103) or \
-                   (cc > 64 and cc < 71) or \
-                   (cc > 47 and cc < 58):
-                    ucode += ch
-                else:
-                    raise self.error('Illegal unicode escape sequence')
-            return unichr(int(ucode, 16))
-        return ch
-
-    def isOverlay(self, string):
-        overlay = False
-
-        testPos = string.find('<')
-
-        if testPos != -1 and string[testPos + 1] != ' ':
-            overlay = True
-        else:
-            testPos = string.find('&')
-            if testPos != -1 and string[testPos + 1] != ' ':
-                overlay = True
-
-        return overlay
-
-    def getComplexString(self, opchar, opcharLen):
-        body = None
-        buf = ''
-        placeables = 0
-        overlay = False
-
-        self._index += opcharLen - 1
-
-        start = self._index + 1
-
-        walkChars = True
-        while walkChars:
-            self._index += 1
-            ch = self._source[self._index]
-            if ch == '\\':
-                self._index += 1
-                ch2 = self._source[self._index]
-                if ch2 == 'u' or \
-                   ch2 == opchar or \
-                   ch2 == '\\' or \
-                   (ch2 == '{' and self._source[self._index + 1] == '{'):
-                    buf += self.unescapeString(ch2)
-                else:
-                    raise self.error('Illegal unicode escape sequence')
-            elif ch == '{' and self._source[self._index + 1] == '{':
-                    if body is None:
-                        body = []
-                    if placeables > MAX_PLACEABLES - 1:
-                        raise self.error(
-                            'Too many placeables, maximum allowed is ' +
-                            MAX_PLACEABLES)
-                    if buf:
-                        if self.isOverlay(buf):
-                            overlay = True
-                        body.append(buf)
-                    self._index += 2
-                    self.getWS()
-                    body.append(self.getExpression())
-                    self.getWS()
-                    if self._source[self._index] != '}' or \
-                       self._source[self._index + 1] != '}':
-                        raise self.error('Expected "}}"')
-                    self._index += 1
-                    placeables += 1
-
-                    buf = ''
-            else:
-                if ch == opchar:
-                    self._index += 1
-                    walkChars = False
-                else:
-                    buf += ch
-                    if self._index + 1 >= self._length:
-                        raise self.error('Unclosed string literal')
-
-        if self.simpleMode:
-            if len(buf) and self.isOverlay(buf):
-                overlay = True
-            return [self._source[start : self._index - 1], overlay]
-
-        if body is None:
-            return [buf, self.isOverlay(buf)]
-        if len(buf):
-            if self.isOverlay(buf):
-                overlay = True
-            body.append(buf)
-        return [body, overlay]
+        comment = ast.Comment(self._source[start : end])
+        comment.setPosition(start - 2, self._index)
+        return comment
 
     def getExpression(self):
+        start = self._index
         exp = self.getPrimaryExpression()
 
         while True:
-            cc = ord(self._source[self._index]);
-
-            if cc == 46 or cc == 91: # [
+            ch = self._source[self._index]
+            if ch == '.' or ch == '[':
                 self._index += 1
-                exp = self.getPropertyExpression(exp, cc == 91)
-            elif cc == 40: # (
+                exp = self.getPropertyExpression(exp, ch == '[', start)
+            elif ch == '(':
                 self._index += 1
-                exp = self.getCallExpression(exp)
+                exp = self.getCallExpression(exp, start)
             else:
                 break
 
         return exp
 
-    def getPropertyExpression(self, idref, computed):
+    def getPropertyExpression(self, idref, computed, start):
         if computed:
             self.getWS()
             exp = self.getExpression()
@@ -417,75 +319,89 @@ class Parser():
         else:
             exp = self.getIdentifier()
 
-        return {
-            't': 'prop',
-            'e': idref,
-            'p': exp,
-            'c': computed
-        }
+        propExpr = ast.PropertyExpresion(idref, exp, computed)
+        propExpr.setPosition(start, self._index)
+        return propExpr
 
-    def getCallExpression(self, callee):
+    def getCallExpression(self, callee, start):
         self.getWS()
-        exp = {}
 
-        exp['t'] = 'call'
-        exp['v'] = callee
-        exp['a'] = self.getItemList(self.getExpression, ')')
-
-        return exp
+        callExpr = ast.CallExpression(callee,
+            self.getItemList(self.getExpression, ')'))
+        callExpr.setPosition(start, self._index)
+        return callExpr
 
     def getPrimaryExpression(self):
-        cc = ord(self._source[self._index])
+        start = self._index
+        ch = self._source[self._index]
 
-        prim = {}
-
-        # variable: $
-        if cc == 36:
+        if ch == '$':
             self._index += 1
-            prim['t'] = 'var'
-            prim['v'] = self.getIdentifier()
-        # global: @
-        elif cc == 64:
+            variable = ast.Variable(self.getIdentifier)
+            variable.setPosition(start, self._index)
+            return variable
+        elif ch == '@':
             self._index += 1
-            prim['t'] = 'glob'
-            prim['v'] = self.getIdentifier()
+            glob = ast.Global(self.getIdentifier)
+            glob.setPosition(start, self._index)
+            return glob
         else:
-            prim['t'] = 'id'
-            prim['v'] = self.getIdentifier()
-
-        return prim
+            return self.getIdentifier()
 
     def getItemList(self, callback, closeChar):
+        items = []
+        closed = False
+
         self.getWS()
+
         if self._source[self._index] == closeChar:
             self._index += 1
-            return []
+            closed = True
 
-        items = []
-
-        while True:
+        while not closed:
             items.append(callback())
             self.getWS()
-
             ch = self._source[self._index]
             if ch == ',':
                 self._index += 1
                 self.getWS()
             elif ch == closeChar:
                 self._index += 1
-                break
+                closed = True
             else:
                 raise self.error('Expected "," or "' + closeChar + '"')
 
         return items
 
-    def error(self, message, pos=None):
-        if pos is None:
-            pos = self._index
+    def error(self, message):
+        pos = self._index
+
         start = self._source.rfind('<', pos - 1)
         lastClose = self._source.rfind('>', pos - 1)
         start = lastClose + 1 if lastClose > start else start
-        context = self._source[start:pos + 10]
+        context = self._source[start : pos + 10]
 
         msg = '%s at pos %s: "%s"' % (message, pos, context)
         return ParserError(msg, pos, context)
+
+    def getJunkEntry(self):
+        pos = self._index
+        nextEntity = self._source.find('<', pos)
+        nextComment = self._source.find('/*', pos)
+
+        nextEntry = min(nextEntity, nextComment)
+
+        if nextEntry == -1:
+            nextEntry = self._length
+
+        self._index = nextEntry
+
+        return ast.JunkEntry(self._source[self._curEntryStart : nextEntry])
+
+l20nCode = '<id "value">'
+
+l20nParser = L20nParser()
+ast = l20nParser.parse(l20nCode)
+
+import json
+print(json.dumps(ast.toJSON(), indent=2))
