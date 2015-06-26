@@ -64,12 +64,14 @@ class Serializer():
     def dumpAttributes(self, attrs):
         string = ''
 
-        for key, attr in attrs.items():
-            if 'x' in attr:
-                string += '  ' + key + self.dumpIndex(attr['x']) + ': ' + \
-                        self.dumpValue(attr['v'], 1) + '\n'
+        for attr in attrs:
+            if attr.index:
+                string += '  ' + self.dumpIdentifier(attr.id) + \
+                    self.dumpIndex(attr.index) + ': ' + \
+                    self.dumpValue(attr.value, 1) + '\n'
             else:
-                string += '  ' + key + ': ' + self.dumpValue(attr, 1) + '\n'
+                string += '  ' + self.dumpIdentifier(attr.id) + ': ' + \
+                    self.dumpValue(attr.value, 1) + '\n'
         return string
 
     def dumpExpression(self, exp):
