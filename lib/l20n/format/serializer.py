@@ -1,7 +1,7 @@
 from . import ast
 
 class SerializerError(Exception):
-    def __init__(self, message, pos, context):
+    def __init__(self, message, pos = 0, context = None):
         self.name = 'SerializerError'
         self.message = message
         self.pos = pos
@@ -126,8 +126,6 @@ class Serializer():
         for item in hashValue.items:
             indent = ' *' if item.default else '  '
 
-            #if key == defIndex:
-            #    indent = ' *'
             string = indent + self.dumpIdentifier(item.id) + ': ' + self.dumpValue(item.value, depth + 1)
             items.append(string)
 
