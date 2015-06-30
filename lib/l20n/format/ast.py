@@ -54,17 +54,17 @@ class Value(Node):
         super(Value, self).__init__()
 
 class String(Value):
-    def __init__(self, source, content):
+    def __init__(self, source, content = None):
         super(String, self).__init__()
         self.source = source
-        self.content = content
+        self.content = content or [source]
 
         self._opchar = '"'
 
 class Hash(Value):
-    def __init__(self, items):
+    def __init__(self, items = None):
         super(Hash, self).__init__()
-        self.items = items
+        self.items = items or []
 
 class Entity(Entry):
     def __init__(self, id, value = None, index = None, attrs = None):
