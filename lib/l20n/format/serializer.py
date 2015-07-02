@@ -25,7 +25,10 @@ class Serializer():
         return string
 
     def dumpEntry(self, entry):
-        return self.dumpEntity(entry)
+        if isinstance(entry, ast.Entity):
+            return self.dumpEntity(entry)
+        if isinstance(entry, ast.Comment):
+            return self.dumpComment(entry)
 
     def dumpEntity(self, entity):
         ident = self.dumpIdentifier(entity.id)
@@ -137,4 +140,7 @@ class Serializer():
 
     def dumpIndex(self, index):
         return '[' + self.dumpItemList(index, self.dumpExpression) + ']'
+
+    def dumpComment(self, comment):
+        return '/*%s*/' % comment.body
 
