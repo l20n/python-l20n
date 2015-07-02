@@ -8,11 +8,8 @@ setup(name='l20n',
       description='Python L20n library',
       author='Zbigniew Braniecki',
       author_email='zbigniew@braniecki.net',
-      url='https://github.com/zbraniecki/pyl20n',
-      packages=['l20n',
-                'l20n.compiler',
-                'l20n.format',
-                'l20n.format.lol'],
+      url='https://github.com/l20n/python-l20n',
+      packages=['lib.l20n.format'],
       package_dir = {
           'l20n': os.path.join('lib'),
       }
