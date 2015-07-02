@@ -9,9 +9,6 @@ setup(name='l20n',
       author='Mozilla',
       author_email='team@mozilla.org',
       url='https://github.com/l20n/python-l20n',
-      packages=['lib.l20n.format'],
-      package_dir = {
-          'l20n': os.path.join('lib'),
-      }
+      packages=['l20n', 'l20n.format'],
      )
 
