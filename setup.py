@@ -4,10 +4,10 @@ from distutils.core import setup
 import os
 
 setup(name='l20n',
-      version='1.0',
+      version='0.1',
       description='Python L20n library',
-      author='Zbigniew Braniecki',
-      author_email='zbigniew@braniecki.net',
+      author='Mozilla',
+      author_email='team@mozilla.org',
       url='https://github.com/l20n/python-l20n',
       packages=['lib.l20n.format'],
       package_dir = {
