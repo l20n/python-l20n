@@ -111,8 +111,14 @@ class L20nParserTestCase(unittest.TestCase):
             '<09>',
         ]
         for string in strings:
-            resource = self.parser.parse(string)
+            resource = self.parser.parse('<pre "value">' +
+                                         string +
+                                         '<post "VALUE">')
             self.assertEqual(len(resource._errors), 1)
+            self.assertEqual(resource.body[0].value.content[0], 'value')
+            self.assertEqual(resource.body[0].id.name, 'pre')
+            self.assertEqual(resource.body[2].value.content[0], 'VALUE')
+            self.assertEqual(resource.body[2].id.name, 'post')
 
     def test_complex_strings(self):
         string = "<id 'test {{ id }} test2'>"
@@ -763,11 +769,14 @@ class L20nParserTestCase(unittest.TestCase):
 #        comment = resource.body[0]
 #        self.assertEqual(comment, ' test ')
 #
+    def test_comment_in_entity_errors(self):
+        resource = self.parser.parse('<id /* test */ "foo">')
+        self.assertEqual(len(resource._errors), 2)
+
     def test_comment_errors(self):
         strings = [
             '/* foo ',
             'foo */',
-            '<id /* test */ "foo">',
         ]
         for string in strings:
             resource = self.parser.parse(string)
