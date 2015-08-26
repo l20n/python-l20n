@@ -12,12 +12,14 @@ MAX_PLACEABLES = 100
 
 class L20nParser():
     def parse(self, string):
+        self.setContent(string)
+        return self.getResource()
+
+    def setContent(self, string):
         self._source = string
         self._index = 0
         self._length = len(string)
         self._curEntryStart = 0
-
-        return self.getResource()
 
     def _getch(self):
         if self._index >= self._length:
@@ -45,19 +47,42 @@ class L20nParser():
         resource = ast.Resource()
         resource.setPosition(0, self._length)
         resource._errors = []
+        junk = None
 
         self.getWS()
         while self._index < self._length:
             try:
-                resource.body.append(self.getEntry())
-            except ParserError as e:
-                resource._errors.append(e)
-                resource.body.append(self.getJunkEntry())
+                entry = self.getEntry()
+                if junk:
+                    resource._errors.append(self.parseError(junk))
+                    resource.body.append(junk)
+                    junk = None
+                resource.body.append(entry)
+            except ParserError:
+                newjunk = self.getJunkEntry()
+                if junk:
+                    junk.content += newjunk.content
+                    junk._pos['end'] = newjunk._pos['end']
+                else:
+                    junk = newjunk
             
             if self._index < self._length:
                 self.getWS()
 
+        if junk:
+            resource._errors.append(self.parseError(junk))
+            resource.body.append(junk)
+
         return resource
+
+    def parseError(self, junk):
+        parser = L20nParser()
+        parser.setContent(junk.content)
+        try:
+            parser.getEntry()
+        except ParserError as e:
+            e.pos += junk._pos['start']
+            return e
 
     def getEntry(self):
         self._curEntryStart = self._index
@@ -407,15 +432,18 @@ class L20nParser():
         return ParserError(msg, pos, context)
 
     def getJunkEntry(self):
-        pos = self._index
+        pos = self._curEntryStart + 1
         nextEntity = self._source.find('<', pos)
+        if nextEntity < 0:
+            nextEntity = self._length
         nextComment = self._source.find('/*', pos)
+        if nextComment < 0:
+            nextComment = self._length
 
         nextEntry = min(nextEntity, nextComment)
 
-        if nextEntry == -1:
-            nextEntry = self._length
-
         self._index = nextEntry
 
-        return ast.JunkEntry(self._source[self._curEntryStart : nextEntry])
+        junk = ast.JunkEntry(self._source[self._curEntryStart : nextEntry])
+        junk.setPosition(self._curEntryStart, nextEntry)
+        return junk
