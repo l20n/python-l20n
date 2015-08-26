@@ -2,7 +2,7 @@
 
 import sys, os
 
-sys.path.append('./lib')
+sys.path.append('./')
 import codecs
 import l20n.format.parser
 import l20n.format.serializer
