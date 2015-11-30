@@ -107,7 +107,8 @@ class L20nParser():
             raise self.error('Expected white space')
 
         ch = self._getch()
-        value = self.getValue(ch, index == None)
+        hasIndex = index is not None
+        value = self.getValue(ch, hasIndex, hasIndex)
         attrs = None
         
         if value == None:
@@ -127,16 +128,16 @@ class L20nParser():
         entity.setPosition(self._curEntryStart, self._index)
         return entity
 
-    def getValue(self, ch = None, optional = False):
+    def getValue(self, ch = None, index = False, required = True):
         if ch is None:
             ch = self._source[self._index]
 
         if ch == "'" or ch == '"':
             return self.getString(ch, 1)
         elif ch == '{':
-            return self.getHash()
+            return self.getHash(index)
 
-        if not optional:
+        if required:
             raise self.error('Unknown value type')
         return None
 
@@ -276,11 +277,12 @@ class L20nParser():
         self._index += 1
         self.getWS()
 
-        attr = ast.Attribute(key, self.getValue(), index)
+        hasIndex = index is not None
+        attr = ast.Attribute(key, self.getValue(None, hasIndex), index)
         attr.setPosition(start, self._index)
         return attr
 
-    def getHash(self):
+    def getHash(self, index):
         start = self._index
         items = []
 
@@ -301,6 +303,10 @@ class L20nParser():
                 break
             if not comma:
                 raise self.error('Expected "}"')
+
+        if not index:
+            if not any(item.default for item in items):
+                raise self.error('Unresolvable Hash Value')
 
         hash = ast.Hash(items)
         hash.setPosition(start, self._index)

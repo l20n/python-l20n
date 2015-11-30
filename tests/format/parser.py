@@ -13,12 +13,6 @@ class L20nParserTestCase(unittest.TestCase):
     def setUp(self):
         self.parser = L20nParser()
 
-    #def test_empty_entity(self):
-    #    string = "<id>"
-    #    resource.body = self.parser.parse(string)
-    #    self.assertEqual(len(resource.body), 1)
-    #    self.assertEqual(resource.body[0].id.name['name'], "id")
-
     def test_string_value(self):
         string = "<id 'string'>"
         resource = self.parser.parse(string)
@@ -186,14 +180,14 @@ class L20nParserTestCase(unittest.TestCase):
 
 
     def test_hash_value(self):
-        string = "<id {a: 'b', a2: 'c', d: 'd' }>"
+        string = "<id {*a: 'b', a2: 'c', d: 'd' }>"
         resource = self.parser.parse(string)
         self.assertEqual(len(resource.body), 1)
         val = resource.body[0].value
         self.assertEqual(len(val.items), 3)
         self.assertEqual(val.items[0].value.source, 'b')
 
-        string = "<id {a: '2', b: '3'} >"
+        string = "<id {*a: '2', b: '3'} >"
         resource = self.parser.parse(string)
         self.assertEqual(len(resource.body), 1)
         val = resource.body[0].value
@@ -202,7 +196,7 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(val.items[1].value.source, '3')
 
     def test_hash_value_with_trailing_comma(self):
-        string = "<id {a: '2', b: '3', } >"
+        string = "<id {*a: '2', b: '3', } >"
         resource = self.parser.parse(string)
         self.assertEqual(len(resource.body), 1)
         val = resource.body[0].value
@@ -211,7 +205,7 @@ class L20nParserTestCase(unittest.TestCase):
         self.assertEqual(val.items[1].value.source, '3')
 
     def test_nested_hash_value(self):
-        string = "<id {a: 'foo', b: {a2: 'p'}}>"
+        string = "<id {*a: 'foo', b: {*a2: 'p'}}>"
         resource = self.parser.parse(string)
         self.assertEqual(len(resource.body), 1)
         val = resource.body[0].value
@@ -240,6 +234,8 @@ class L20nParserTestCase(unittest.TestCase):
             "<id {a:'foo'b:'foo'}>",
             "<id {a }>",
             '<id {a: 2, b , c: 3 } >',
+            '<id {a: 2, b: 3}>',
+            '<id {*a: {d: 3}, b: 3}>',
 #           '<id {*a: "v", *b: "c"}>',
         ]
         for string in strings:
