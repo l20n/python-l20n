@@ -109,21 +109,15 @@ class KeyValueArg(Node):
 
 class EntityReference(Identifier):
     def __init__(self, name, namespace):
-        super(EntityRefrence, self).__init__()
-        self.name = name
-        self.namespace = namespace
+        super(EntityReference, self).__init__(name, namespace)
 
 class BuiltinReference(Identifier):
     def __init__(self, name, namespace):
-        super(BuiltinRefrence, self).__init__()
-        self.name = name
-        self.namespace = namespace
+        super(BuiltinRefrence, self).__init__(name, namespace)
 
 class Keyword(Identifier):
     def __init__(self, name, namespace = None):
-        super(Keyword, self).__init__()
-        self.name = name
-        self.namespace = namespace
+        super(Keyword, self).__init__(name, namespace)
 
 class Number(Node):
     def __init__(self, value):
@@ -138,7 +132,7 @@ class TextElement(Node):
 class Comment(Node):
     def __init__(self, content):
         super(Comment, self).__init__()
-        this.content = content
+        self.content = content
 
 class JunkEntry(Node):
     def __init__(self, content):
