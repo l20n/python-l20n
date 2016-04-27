@@ -1,146 +1,65 @@
 from . import ast
 
-class SerializerError(Exception):
-    def __init__(self, message, pos = 0, context = None):
-        self.name = 'SerializerError'
-        self.message = message
-        self.pos = pos
-        self.context = context
-
 class Serializer():
-    def serialize(self, resource):
+    def serialize(self, ast):
         string = ''
-        for entry in resource.body:
+        for entry in ast.body:
             string += self.dumpEntry(entry) + '\n'
         return string
 
-    def serializeString(self, ast):
-        string = ''
-
-        if type(ast) is dict:
-            string += self.dumpValue(ast, 0)
-        else:
-            string += self.dumpString(ast)
-
-        return string
-
     def dumpEntry(self, entry):
-        if isinstance(entry, ast.Entity):
+        if entry.type == 'Entity':
             return self.dumpEntity(entry)
-        if isinstance(entry, ast.Comment):
-            return self.dumpComment(entry)
+        elif entry.type == 'Comment':
+            return self.dumpComment(entry) + '\n'
+        elif entry.type == 'Section':
+            return self.dumpSection(entry)
 
     def dumpEntity(self, entity):
-        ident = self.dumpIdentifier(entity.id)
-        index = self.dumpIndex(entity.index) if entity.index else ''
-        val = self.dumpValue(entity.value, 0)
+        str = ''
 
-        if len(entity.attrs) == 0:
-            return '<' + ident + index + ' ' + val + '>'
+        if entity.comment:
+            str += self.dumpComment(entity.comment) + '\n'
+
+        id = self.dumpIdentifier(entity.id)
+        value = self.dumpPattern(entity.value)
+
+        if len(entity.traits):
+            traits = self.dumpTraits(entity.traits, 2)
         else:
-            return '<' + ident + index + ' ' + val + \
-                    '\n' + self.dumpAttributes(entity.attrs) + '>'
+            str += '{} = {}'.format(id, value)
+        return str
 
-    def dumpIdentifier(self, ident):
-        return ident.name
+    def dumpIdentifier(self, id):
+        if id.namespace:
+            return '{}/{}'.format(id.namespace, id.name)
+        return id.name
 
-    def dumpValue(self, value, depth):
-        if value is None:
+    def dumpPattern(self, pattern):
+        if pattern is None:
             return ''
+        if pattern._quoteDelim:
+            return '"{}"'.format(pattern.source)
+        str = ''
 
-        if isinstance(value, ast.String):
-            return self.dumpString(value)
+        for elem in pattern.elements:
+            if elem.type == 'TextElement':
+                if '\n' in elem.value:
+                    str += '\n | {}'.format(elem.value.replace('\n', '\n | '))
+                else:
+                    str += elem.value
+            elif elem.type == 'Placeable':
+                str += self.dumpPlaceable(elem)
+        return str
 
-        if isinstance(value, ast.Hash):
-            return self.dumpHash(value, depth)
+    def dumpPlaceable(self, placeable):
+        source = ', '.join(map(self.dumpExpression, placeable.expressions))
 
-    def dumpString(self, string):
-        ret = '"'
-
-        for chunk in string.content:
-            if type(chunk) is str or type(chunk) is unicode:
-                ret += chunk.replace('"', '\\"')
-            else:
-                ret += '{{ ' + self.dumpExpression(chunk) + ' }}'
-        return ret + '"'
-
-    def dumpAttributes(self, attrs):
-        string = ''
-
-        for attr in attrs:
-            if attr.index:
-                string += '  ' + self.dumpIdentifier(attr.id) + \
-                    self.dumpIndex(attr.index) + ': ' + \
-                    self.dumpValue(attr.value, 1) + '\n'
-            else:
-                string += '  ' + self.dumpIdentifier(attr.id) + ': ' + \
-                    self.dumpValue(attr.value, 1) + '\n'
-        return string
+        if source.endswith('\n'):
+            return '{{ {}}}'.format(source)
+        return '{{ {} }}'.format(source)
 
     def dumpExpression(self, exp):
-        if isinstance(exp, ast.CallExpression):
-            return self.dumpCallExpression(exp)
-        elif isinstance(exp, ast.PropertyExpression):
-            return self.dumpPropertyExpression(exp)
-
-        return self.dumpPrimaryExpression(exp)
-
-    def dumpPropertyExpression(self, exp):
-        idref = self.dumpExpression(exp.idref)
-
-        if exp.computed:
-            prop = self.dumpExpression(exp.exp)
-            return '%s[%s]' % (idref, prop)
-        
-        prop = self.dumpIdentifier(exp.exp)
-        return '%s.%s' % (idref, prop)
-
-    def dumpCallExpression(self, exp):
-        pexp = self.dumpExpression(exp.callee)
-
-        attrs = self.dumpItemList(exp.args, self.dumpExpression)
-
-        pexp += '(' + attrs + ')'
-        return pexp
-
-    def dumpPrimaryExpression(self, exp):
-        ret = ''
-
-        if type(exp) is str:
-            return exp
-
-        if isinstance(exp, ast.Global):
-            ret += '@'
-            ret += self.dumpIdentifier(exp.name)
-        elif isinstance(exp, ast.Variable):
-            ret += '$'
-            ret += self.dumpIdentifier(exp.name)
-        elif isinstance(exp, ast.Identifier):
-            ret += self.dumpIdentifier(exp)
-        else:
-            raise SerializerError('Unknown primary expression')
-
-        return ret
-
-    def dumpHash(self, hashValue, depth):
-        items = []
-        string = ''
-
-        for item in hashValue.items:
-            indent = ' *' if item.default else '  '
-
-            string = indent + self.dumpIdentifier(item.id) + ': ' + self.dumpValue(item.value, depth + 1)
-            items.append(string)
-
-        indent = '  ' * depth
-        return '{\n' + indent + (',\n' + indent).join(items) + '\n' + indent + '}'
-
-    def dumpItemList(self, itemList, cb):
-        return ', '.join(map(cb, itemList))
-
-    def dumpIndex(self, index):
-        return '[' + self.dumpItemList(index, self.dumpExpression) + ']'
-
-    def dumpComment(self, comment):
-        return '/*%s*/' % comment.body
-
+        if exp.type == 'ExternalArgument':
+            return '${}'.format(exp.name)
+        return str()
