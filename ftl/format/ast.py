@@ -113,7 +113,7 @@ class EntityReference(Identifier):
 
 class BuiltinReference(Identifier):
     def __init__(self, name, namespace):
-        super(BuiltinRefrence, self).__init__(name, namespace)
+        super(BuiltinReference, self).__init__(name, namespace)
 
 class Keyword(Identifier):
     def __init__(self, name, namespace = None):
@@ -121,7 +121,7 @@ class Keyword(Identifier):
 
 class Number(Node):
     def __init__(self, value):
-        super(Keyword, self).__init__()
+        super(Number, self).__init__()
         self.value = value
 
 class TextElement(Node):

@@ -2,7 +2,7 @@
 from . import ast
 
 class L10nError(Exception):
-    def __init__(self, message, pos, context):
+    def __init__(self, message, pos = None, context = None):
         self.name = 'L10nError'
         self.message = message
         self.pos = pos
@@ -19,15 +19,19 @@ class ParseContext():
 
         self._lastGoodEntryEnd = 0
 
-    def _getch(self, offset = 0):
-        if self._index + offset >= self._length:
+    def _getch(self, pos = None, offset = 0):
+        if pos is None:
+            pos = self._index
+        if pos + offset >= self._length:
             return ''
-        return self._source[self._index + offset]
+        return self._source[pos + offset]
 
-    def _getcc(self, offset = 0):
-        if self._index + offset >= self._length:
+    def _getcc(self, pos = None, offset = 0):
+        if pos is None:
+            pos = self._index
+        if pos + offset >= self._length:
             return -1
-        return ord(self._source[self._index + offset])
+        return ord(self._source[pos + offset])
 
     def getResource(self):
         resource = ast.Resource()
@@ -38,7 +42,8 @@ class ParseContext():
         while self._index < self._length:
             try:
                 resource.body.append(self.getEntry())
-            except L10nError:
+                self._lastGoodEntryEnd = self._index
+            except L10nError, e:
                 resource._errors.append(e)
                 resource.body.append(self.getJunkEntry())
 
@@ -58,11 +63,11 @@ class ParseContext():
 
         self.getLineWS()
 
-        if self._source[self._index] == '[':
+        if self._getch() == '[':
             return self.getSection(comment)
 
         if self._index < self._length and \
-          self._source[self._index] is not '\n':
+          self._getch() != '\n':
               return self.getEntity(comment)
 
         return comment
@@ -81,7 +86,7 @@ class ParseContext():
         self.getLineWS()
 
         if self._getch() != ']' or \
-           self._getch(1) != ']':
+           self._getch(None, 1) != ']':
             raise self.error('Expected "]]" to close a section')
 
         self._index += 2
@@ -119,7 +124,8 @@ class ParseContext():
             ch == '*'):
             members = self.getMembers()
         elif value is None:
-            raise self.error()
+            raise self.error('Expected a value (like: " = value") or a ' + \
+                             'trait (like: "[key] value")')
 
         return ast.Entity(id, value, members, comment)
 
@@ -188,7 +194,7 @@ class ParseContext():
         start = self._index
         cc = self._getcc()
 
-        if (cc >= 97 and cc <= 122) or \
+        while (cc >= 97 and cc <= 122) or \
            (cc >= 65 and cc <= 90) or \
            (cc >= 48 and cc <= 57) or \
            cc == 95 or cc == 45:
@@ -208,7 +214,7 @@ class ParseContext():
         ch = self._getch()
 
         if ch == '\\':
-            ch2 = self._getch(1)
+            ch2 = self._getch(None, 1)
             if ch2 == '"' or ch2 == '{' or ch2 == '\\':
                 self._index += 1
                 buffer += self._getch()
@@ -222,13 +228,14 @@ class ParseContext():
         while self._index < self._length:
             if ch == '\n':
                 if quoteDelimited:
-                    raise self.error()
+                    raise self.error('Unclosed string')
                 self._index += 1
                 self.getLineWS()
                 if self._getch() != '|':
                     break;
                 if firstLine and len(buffer):
-                    raise self.error()
+                    raise self.error('Multiline string should have the ID ' + \
+                                     'empty')
                 firstLine = False
                 self._index += 1
                 if self._getch() == ' ':
@@ -238,7 +245,7 @@ class ParseContext():
                 ch = self._getch()
                 continue
             elif ch == '\\':
-                ch2 = self._getch(1)
+                ch2 = self._getch(None, 1)
                 if (quoteDelimited and ch2 == '"') or ch2 == '{':
                     ch = ch2
                     self._index += 1
@@ -313,7 +320,7 @@ class ParseContext():
         if self._getch() != '}' and \
            self._getch() != ',':
             if self._getch() != '-' or \
-               self._getch(1) != '>':
+               self._getch(None, 1) != '>':
                 raise self.error('Expected "}", "," or "->"')
             self._index += 2
 
@@ -362,7 +369,8 @@ class ParseContext():
 
             exp = self.getCallExpression()
 
-            if isinstance(exp, ast.EntityReference) or \
+            print(exp)
+            if not isinstance(exp, ast.EntityReference) or \
                exp.namespace is not None:
                 args.append(exp)
             else:
@@ -376,7 +384,7 @@ class ParseContext():
 
                     if isinstance(val, ast.EntityReference) or \
                        isinstance(val, ast.MemberExpression):
-                        self._index = self._source.rfind('=', self._index) + 1
+                        self._index = self._source.rfind('=', 0, self._index) + 1
                         raise self.error('Expected string in quotes')
 
                     args.append(ast.KeyValueArg(exp.name, val))
@@ -385,6 +393,7 @@ class ParseContext():
             
             self.getLineWS()
 
+            print(self._source[self._index:])
             if self._getch() == ')':
                 break
             elif self._getch() == ',':
@@ -394,7 +403,7 @@ class ParseContext():
 
         return args
 
-    def getNumber():
+    def getNumber(self):
         num = ''
         cc = self._getcc()
 
@@ -440,7 +449,7 @@ class ParseContext():
 
         while self._index < self._length:
             if (self._getch() != '[' or \
-                self._getch(1) == '[') and \
+                self._getch(None, 1) == '[') and \
                self._getch() != '*':
                 break
             
@@ -478,6 +487,7 @@ class ParseContext():
         else:
             literal = self.getIdentifierWithSpace('/')
 
+
         if self._getch() != ']':
             raise self.error('Expected "]"')
 
@@ -509,7 +519,7 @@ class ParseContext():
 
         content += self._source[self._index:eol]
 
-        while eol != -1 and self._source[eol + 1] == '#':
+        while eol != -1 and self._getch(eol + 1) == '#':
             self._index = eol + 2
 
             if self._getch() == ' ':
@@ -529,10 +539,84 @@ class ParseContext():
 
         return ast.Comment(content)
 
-    def error(message, start = None):
-        print(message)
-        err = L10nError()
+    def error(self, message, start = None):
+        pos = self._index
+
+        if start is None:
+            start = pos
+
+        start = self._findEntityStart(start)
+
+        context = self._source[start: pos + 10]
+
+        msg = '\n\n ' + message + '\nat pos ' + str(pos) + \
+          ':\n------\n...' + context + '\n------'
+        err = L10nError(msg)
+
+        row = len(self._source[0:pos].split('\n'))
+        col = pos - self._source.rfind('\n', 0, pos - 1)
+        #err._pos = {start: pos, end: None, col: col, row: row}
+        err.offset = pos - start
+        err.description = message
+        err.context = context
         return err
+
+    def getJunkEntry(self):
+        pos = self._index
+
+        nextEntity = self._findNextEntryStart(pos)
+
+        if nextEntity == -1:
+            nextEntity = self._length
+
+        self._index = nextEntity
+
+        entityStart = self._findEntityStart(pos)
+
+        if entityStart < self._lastGoodEntryEnd:
+            entityStart = self._lastGoodEntryEnd
+
+        junk = ast.JunkEntry(self._source[entityStart:nextEntity])
+        return junk
+
+    def _findEntityStart(self, pos):
+        start = pos
+
+        while True:
+            start = self._source.rfind('\n', 0, start - 2)
+            if start == -1 or start == 0:
+                start = 0
+                break
+
+            cc = self._getcc(start + 1)
+
+            if (cc >= 97 and cc <= 122) or \
+               (cc >= 65 and cc <= 90) or \
+               cc == 95:
+                start += 1
+                break
+
+        return start
+
+    def _findNextEntryStart(self, pos):
+        start = pos
+
+        while True:
+            if start == 0 or self._getch(start - 1) == '\n':
+                cc = self._getcc(start)
+
+                if (cc >= 97 and cc <= 122) or \
+                   (cc >= 65 and cc <= 90) or \
+                   cc == 95 or cc == 35 or cc == 91:
+                    break
+
+            start = self._source.find('\n', start)
+
+            if start == -1:
+                break
+            start += 1
+
+        return start
 
 
 class FTLParser():
