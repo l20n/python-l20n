@@ -43,8 +43,8 @@ class ParseContext():
             try:
                 resource.body.append(self.getEntry())
                 self._lastGoodEntryEnd = self._index
-            except L10nError, e:
-                resource._errors.append(e)
+            except L10nError as e:
+                #resource._errors.append(e)
                 resource.body.append(self.getJunkEntry())
 
             self.getWS()
@@ -161,8 +161,7 @@ class ParseContext():
 
         if (cc >= 97 and cc <= 122) or \
            (cc >= 65 and cc <= 90) or \
-           (cc >= 48 and cc <= 57) or \
-           cc == 95 or cc == 45:
+           cc == 95:
             self._index += 1
             cc = self._getcc()
         elif len(id) == 0:
@@ -297,7 +296,7 @@ class ParseContext():
             start = self._index
             try:
                 expressions.append(self.getPlaceableExpression())
-            except L10nError, e:
+            except L10nError as e:
                 raise self.error(e.description, start)
             self.getWS()
             if self._getch() == '}':
@@ -369,7 +368,6 @@ class ParseContext():
 
             exp = self.getCallExpression()
 
-            print(exp)
             if not isinstance(exp, ast.EntityReference) or \
                exp.namespace is not None:
                 args.append(exp)
@@ -393,7 +391,6 @@ class ParseContext():
             
             self.getLineWS()
 
-            print(self._source[self._index:])
             if self._getch() == ')':
                 break
             elif self._getch() == ',':
@@ -583,7 +580,10 @@ class ParseContext():
         start = pos
 
         while True:
-            start = self._source.rfind('\n', 0, start - 2)
+            end = start - 2
+            if end < 0:
+                end = 0
+            start = self._source.rfind('\n', 0, end)
             if start == -1 or start == 0:
                 start = 0
                 break

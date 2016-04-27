@@ -15,8 +15,6 @@ class Node(object):
     def toJSON(self):
         fields = {}
         for key in vars(self):
-            if key[0] == '_':
-                continue
             attr = getattr(self, key)
             fields[key] = attr2json(attr)
         return fields
@@ -74,9 +72,9 @@ class Entity(Entry):
 
 
 class Placeable(Node):
-    def __init__(self, expression):
+    def __init__(self, expressions):
         super(Placeable, self).__init__()
-        self.expression = expression
+        self.expressions = expressions
 
 class SelectExpression(Node):
     def __init__(self, expression, variants = None):
@@ -87,7 +85,7 @@ class SelectExpression(Node):
 class MemberExpression(Node):
     def __init__(self, obj, keyword):
         super(MemberExpression, self).__init__()
-        self.obj = obj
+        self.object = obj
         self.keyword = keyword
 
 class CallExpression(Node):
