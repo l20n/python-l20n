@@ -1,6 +1,6 @@
 from . import ast
 
-class Serializer():
+class FTLSerializer():
     def serialize(self, ast):
         string = ''
         for entry in ast.body:
@@ -14,6 +14,7 @@ class Serializer():
             return self.dumpComment(entry) + '\n'
         elif entry.type == 'Section':
             return self.dumpSection(entry)
+        return ''
 
     def dumpEntity(self, entity):
         str = ''
@@ -32,7 +33,7 @@ class Serializer():
         return str
 
     def dumpComment(self, comment):
-        return '#{}'.format(comment.content.replace('\n', '\n# '))
+        return '# {}'.format(comment.content.replace('\n', '\n# '))
 
     def dumpSection(self, section):
         comment = '{}\n'.format(
