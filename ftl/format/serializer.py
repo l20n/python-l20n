@@ -26,9 +26,19 @@ class Serializer():
 
         if len(entity.traits):
             traits = self.dumpTraits(entity.traits, 2)
+            str += '{} = {}\n{}'.format(id, value, traits)
         else:
             str += '{} = {}'.format(id, value)
         return str
+
+    def dumpComment(self, comment):
+        return '#{}'.format(comment.content.replace('\n', '\n# '))
+
+    def dumpSection(self, section):
+        comment = '{}\n'.format(
+            self.dumpComment(section.comment)) if section.comment else ''
+        sec = self.dumpIdentifier(section.name)
+        return '{}[[ {} ]]'.format(comment, sec)
 
     def dumpIdentifier(self, id):
         if id.namespace:
@@ -62,4 +72,40 @@ class Serializer():
     def dumpExpression(self, exp):
         if exp.type == 'ExternalArgument':
             return '${}'.format(exp.name)
-        return str()
+        elif exp.type == 'BuiltinReference':
+            return exp.name
+        elif exp.type == 'EntityReference':
+            return self.dumpIdentifier(exp)
+        elif exp.type == 'SelectExpression':
+            sel = self.dumpExpression(exp.expression)
+            traits = self.dumpTraits(exp.variants, 2)
+            return '{} ->\n{}\n'.format(sel, traits)
+        elif exp.type == 'CallExpression':
+            id = self.dumpExpression(exp.callee)
+            args = self.dumpCallArgs(exp.args)
+            return '{}({})'.format(id, args)
+        elif exp.type == 'Pattern':
+            return self.dumpPattern(exp)
+        elif exp.type == 'Number':
+            return exp.value
+        elif exp.type == 'MemberExpression':
+            obj = self.dumpExpression(exp.object)
+            key = self.dumpExpression(exp.keyword)
+            return '{}[{}]'.format(obj, key)
+        elif exp.type == 'Identifier':
+            return self.dumpIdentifier(exp)
+
+    def dumpCallArgs(self, args):
+        return ', '.join(map(
+            lambda arg: '{}:{}'.format(arg.name, self.dumpExpression(arg.value))
+                if arg.type == 'KeyValueArg' else self.dumpExpression(arg),
+            args))
+
+    def dumpTraits(self, traits, indent):
+        px = ' ' * indent
+        return '\n'.join(map(lambda trait: '{}{}[{}] {}'.format(
+            px, 
+            '*' if trait.default else '',
+            self.dumpIdentifier(trait.key),
+            self.dumpPattern(trait.value)
+        ), traits))
