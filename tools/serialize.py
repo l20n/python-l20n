@@ -14,7 +14,7 @@ def read_file(path):
     return text
 
 def print_l20n(fileType, data):
-    l20nSerializer = ftl.format.serializer.Serializer()
+    l20nSerializer = ftl.format.serializer.FTLSerializer()
     result = None
 
     if fileType == 'json':
@@ -25,7 +25,7 @@ def print_l20n(fileType, data):
         l20nParser = ftl.format.parser.FTLParser()
         print('----- AST -----')
         ast = l20nParser.parseResource(data)
-        print(json.dumps(ast.toJSON(), indent=2, ensure_ascii=False))
+        print(json.dumps(ast, indent=2, ensure_ascii=False))
         print('--------------------')
         result = l20nSerializer.serialize(ast)
     

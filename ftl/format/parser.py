@@ -622,4 +622,4 @@ class ParseContext():
 class FTLParser():
   def parseResource(self, string):
     parseContext = ParseContext(string)
-    return parseContext.getResource()
+    return parseContext.getResource().toJSON()

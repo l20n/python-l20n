@@ -16,11 +16,11 @@ def read_file(path):
 def print_ast(fileType, data):
     ftlParser = ftl.format.parser.FTLParser()
     ast = ftlParser.parseResource(data)
-    print(json.dumps(ast.toJSON(), indent=2, ensure_ascii=False))
+    print(json.dumps(ast, indent=2, ensure_ascii=False))
 
     print('Errors:')
-    for error in ast._errors:
-        print(error.message)
+    for error in ast['_errors']:
+        print(error['message'])
 
 if __name__ == "__main__":
     file_type = 'ftl'

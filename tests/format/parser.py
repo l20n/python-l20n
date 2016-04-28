@@ -33,7 +33,7 @@ class L20nParserTestCase(unittest.TestCase):
 
                 source = read_file(ftlPath)
                 jsonSource = read_file(jsonPath)
-                ast = self.parser.parseResource(source).toJSON()
+                ast = self.parser.parseResource(source)
                 refAST = json.loads(jsonSource)
                 del refAST['_errors']
                 del ast['_errors']

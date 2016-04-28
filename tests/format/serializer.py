@@ -36,7 +36,7 @@ class L20nParserTestCase(unittest.TestCase):
                 ast = self.parser.parseResource(source)
                 out = self.serializer.serialize(ast)
                 ast2 = self.parser.parseResource(out)
-                self.assertEqual(ast.toJSON()['body'], ast2.toJSON()['body'], 'Error in fixture: ' + f)
+                self.assertEqual(ast['body'], ast2['body'], 'Error in fixture: ' + f)
 
 
 if __name__ == '__main__':
