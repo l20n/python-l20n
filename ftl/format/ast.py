@@ -29,24 +29,25 @@ class Node(object):
         }
 
 class Resource(Node):
-    def __init__(self):
+    def __init__(self, body = None, comment = None):
         super(Resource, self).__init__()
-        self.body = []
+        self.body = body or []
+        self.comment = comment
 
 class Entry(Node):
     def __init__(self):
         super(Entry, self).__init__()
 
 class Identifier(Node):
-    def __init__(self, name, namespace):
+    def __init__(self, name):
         super(Identifier, self).__init__()
         self.name = name
-        self.namespace = namespace
 
 class Section(Node):
-    def __init__(self, name, comment = None):
+    def __init__(self, key, body = None, comment = None):
         super(Section, self).__init__()
-        self.name = name
+        self.key = key
+        self.body = body or []
         self.comment = comment
 
 class Pattern(Node):
@@ -106,16 +107,17 @@ class KeyValueArg(Node):
         self.value = value
 
 class EntityReference(Identifier):
-    def __init__(self, name, namespace):
-        super(EntityReference, self).__init__(name, namespace)
+    def __init__(self, name):
+        super(EntityReference, self).__init__(name)
 
 class BuiltinReference(Identifier):
-    def __init__(self, name, namespace):
-        super(BuiltinReference, self).__init__(name, namespace)
+    def __init__(self, name):
+        super(BuiltinReference, self).__init__(name)
 
 class Keyword(Identifier):
     def __init__(self, name, namespace = None):
-        super(Keyword, self).__init__(name, namespace)
+        super(Keyword, self).__init__(name)
+        self.namespace = namespace
 
 class Number(Node):
     def __init__(self, value):

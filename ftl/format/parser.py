@@ -18,6 +18,12 @@ class ParseContext():
         self._length = len(string)
 
         self._lastGoodEntryEnd = 0
+        self._currentBlock = None
+
+    def _isIdentifierStart(self, cc):
+        return (cc >= 97 and cc <= 122) or \
+               (cc >= 65 and cc <= 90) or \
+                cc == 95
 
     def _getch(self, pos = None, offset = 0):
         if pos is None:
@@ -35,30 +41,40 @@ class ParseContext():
 
     def getResource(self):
         resource = ast.Resource()
-        resource._errors = []
+        errors = []
+        comment = None
+
+        self._currentBlock = resource.body
+
+        if self._getch() == '#':
+            comment = self.getComment()
+
+            cc = self._getcc()
+            if not self._isIdentifierStart(cc):
+                resource.comment = comment
+                comment = None
 
         self.getWS()
 
         while self._index < self._length:
             try:
-                resource.body.append(self.getEntry())
+                self._currentBlock.append(self.getEntry(comment))
                 self._lastGoodEntryEnd = self._index
+                comment = None
             except L10nError as e:
-                #resource._errors.append(e)
-                resource.body.append(self.getJunkEntry())
+                errors.append(e)
+                self._currentBlock.append(self.getJunkEntry())
 
             self.getWS()
 
-        return resource
+        return [resource, errors]
 
-    def getEntry(self):
+    def getEntry(self, comment = None):
         if (self._index is not 0 and \
             self._source[self._index - 1] != '\n'):
             raise self.error('Expected new line and a new entry')
 
-        comment = None
-
-        if self._source[self._index] == '#':
+        if comment is None and self._getch() == '#':
             comment = self.getComment()
 
         self.getLineWS()
@@ -81,7 +97,7 @@ class ParseContext():
 
         self.getLineWS()
 
-        id = self.getIdentifier()
+        key = self.getKeyword()
 
         self.getLineWS()
 
@@ -91,10 +107,12 @@ class ParseContext():
 
         self._index += 2
 
-        return ast.Section(id, comment)
+        section = ast.Section(key, [], comment)
+        self._currentBlock = section.body
+        return section
 
     def getEntity(self, comment = None):
-        id = self.getIdentifier('/')
+        id = self.getIdentifier()
 
         members = []
         value = None
@@ -144,27 +162,16 @@ class ParseContext():
             self._index += 1
             cc = self._getcc()
 
-    def getIdentifier(self, nsSep = None):
-        namespace = None
-        id = ''
-
-        if nsSep:
-            namespace = self.getIdentifier().name
-            if self._getch() == nsSep:
-                self._index += 1
-            elif namespace:
-                id = namespace
-                namespace = None
+    def getIdentifier(self):
+        name = ''
 
         start = self._index
         cc = self._getcc()
 
-        if (cc >= 97 and cc <= 122) or \
-           (cc >= 65 and cc <= 90) or \
-           cc == 95:
+        if self._isIdentifierStart(cc):
             self._index += 1
             cc = self._getcc()
-        elif len(id) == 0:
+        elif len(name) == 0:
             raise self.error('Expected an identifier (starting with [a-zA-Z_])')
 
 
@@ -175,33 +182,37 @@ class ParseContext():
             self._index += 1
             cc = self._getcc()
 
-        id += self._source[start:self._index]
-        return ast.Identifier(id, namespace)
+        name += self._source[start:self._index]
+        return ast.Identifier(name)
 
-    def getIdentifierWithSpace(self, nsSep = None):
-        namespace = None
-        id = ''
+    def getKeyword(self):
+        name = ''
+        namespace = self.getIdentifier().name
 
-        if nsSep:
-            namespace = self.getIdentifier().name
-            if self._getch() == nsSep:
-                self._index += 1
-            elif namespace:
-                id = namespace
-                namespace = None
+        if self._getch() == '/':
+            self._index += 1
+        elif namespace:
+            name = namespace
+            namespace = None
 
         start = self._index
         cc = self._getcc()
 
+        if self._isIdentifierStart(cc):
+            self._index += 1
+            cc = self._getcc()
+        elif len(name) == 0:
+            raise self.error('Expected an identifier (starting with [a-zA-Z_])')
+
         while (cc >= 97 and cc <= 122) or \
            (cc >= 65 and cc <= 90) or \
            (cc >= 48 and cc <= 57) or \
-           cc == 95 or cc == 45:
+           cc == 95 or cc == 45 or cc == 32:
             self._index += 1
             cc = self._getcc()
 
-        id += self._source[start:self._index]
-        return ast.Identifier(id, namespace)
+        name += self._source[start:self._index].rstrip()
+        return ast.Keyword(name, namespace)
 
     def getPattern(self):
         buffer = ''
@@ -353,7 +364,7 @@ class ParseContext():
         self._index += 1
 
         if isinstance(exp, ast.EntityReference):
-            exp = ast.BuiltinReference(exp.name, exp.namespace)
+            exp = ast.BuiltinReference(exp.name)
 
         return ast.CallExpression(exp, args)
 
@@ -368,8 +379,7 @@ class ParseContext():
 
             exp = self.getCallExpression()
 
-            if not isinstance(exp, ast.EntityReference) or \
-               exp.namespace is not None:
+            if not isinstance(exp, ast.EntityReference):
                 args.append(exp)
             else:
                 self.getLineWS()
@@ -436,7 +446,7 @@ class ParseContext():
         exp = self.getLiteral()
 
         while self._getch() == '[':
-            keyword = self.getKeyword()
+            keyword = self.getMemberKey()
             exp = ast.MemberExpression(exp, keyword)
 
         return exp
@@ -459,7 +469,7 @@ class ParseContext():
             if self._getch() != '[':
                 raise self.error('Expected "["')
 
-            key = self.getKeyword()
+            key = self.getMemberKey()
 
             self.getLineWS()
 
@@ -473,7 +483,7 @@ class ParseContext():
 
         return members
 
-    def getKeyword(self):
+    def getMemberKey(self):
         self._index += 1
 
         cc = self._getcc()
@@ -482,7 +492,7 @@ class ParseContext():
         if (cc >= 48 and cc <= 57) or cc == 45:
             literal = self.getNumber()
         else:
-            literal = self.getIdentifierWithSpace('/')
+            literal = self.getKeyword()
 
 
         if self._getch() != ']':
@@ -499,11 +509,11 @@ class ParseContext():
             return self.getPattern()
         elif cc == 36:
             self._index += 1
-            id = self.getIdentifier()
-            return ast.ExternalArgument(id.name)
+            name = self.getIdentifier().name
+            return ast.ExternalArgument(name)
 
-        id = self.getIdentifier('/')
-        return ast.EntityReference(id.name, id.namespace)
+        name = self.getIdentifier().name
+        return ast.EntityReference(name)
 
     def getComment(self):
         self._index += 1
@@ -590,9 +600,7 @@ class ParseContext():
 
             cc = self._getcc(start + 1)
 
-            if (cc >= 97 and cc <= 122) or \
-               (cc >= 65 and cc <= 90) or \
-               cc == 95:
+            if self._isIdentifierStart(cc):
                 start += 1
                 break
 
@@ -605,9 +613,7 @@ class ParseContext():
             if start == 0 or self._getch(start - 1) == '\n':
                 cc = self._getcc(start)
 
-                if (cc >= 97 and cc <= 122) or \
-                   (cc >= 65 and cc <= 90) or \
-                   cc == 95 or cc == 35 or cc == 91:
+                if self._isIdentifierStart(cc) or cc == 35 or cc == 91:
                     break
 
             start = self._source.find('\n', start)
@@ -622,4 +628,5 @@ class ParseContext():
 class FTLParser():
   def parseResource(self, string):
     parseContext = ParseContext(string)
-    return parseContext.getResource().toJSON()
+    [ast, errors] = parseContext.getResource()
+    return [ast.toJSON(), errors]
