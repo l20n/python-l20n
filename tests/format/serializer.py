@@ -33,9 +33,9 @@ class L20nParserTestCase(unittest.TestCase):
                 ftlPath = os.path.join(dirpath, f)
 
                 source = read_file(ftlPath)
-                ast = self.parser.parseResource(source)
+                [ast, errors] = self.parser.parseResource(source)
                 out = self.serializer.serialize(ast)
-                ast2 = self.parser.parseResource(out)
+                [ast2, errors] = self.parser.parseResource(out)
                 self.assertEqual(ast['body'], ast2['body'], 'Error in fixture: ' + f)
 
 

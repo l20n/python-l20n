@@ -2,18 +2,28 @@ from . import ast
 
 class FTLSerializer():
     def serialize(self, ast):
+        body = ast['body']
+        comment = ast['comment']
+
         string = ''
-        for entry in ast['body']:
-            string += self.dumpEntry(entry) + '\n'
+        if comment is not None:
+            string += self.dumpComment(comment) + '\n\n'
+        for entry in body:
+            string += self.dumpEntry(entry)
         return string
 
     def dumpEntry(self, entry):
         if entry['type'] == 'Entity':
-            return self.dumpEntity(entry)
+            return self.dumpEntity(entry) + '\n'
         elif entry['type'] == 'Comment':
-            return self.dumpComment(entry) + '\n'
+            return self.dumpComment(entry) + '\n\n'
         elif entry['type'] == 'Section':
-            return self.dumpSection(entry)
+            return self.dumpSection(entry) + '\n'
+        elif entry['type'] == 'JunkEntry':
+            return ''
+        else:
+            print(entry)
+            raise Exception('Unknown entry type.')
         return ''
 
     def dumpEntity(self, entity):
@@ -26,7 +36,7 @@ class FTLSerializer():
         value = self.dumpPattern(entity['value'])
 
         if len(entity['traits']):
-            traits = self.dumpTraits(entity['traits'], 2)
+            traits = self.dumpMembers(entity['traits'], 2)
             str += '{} = {}\n{}'.format(id, value, traits)
         else:
             str += '{} = {}'.format(id, value)
@@ -38,13 +48,21 @@ class FTLSerializer():
     def dumpSection(self, section):
         comment = '{}\n'.format(
             self.dumpComment(section['comment'])) if section['comment'] else ''
-        sec = self.dumpIdentifier(section['name'])
-        return '{}[[ {} ]]'.format(comment, sec)
+        sec = self.dumpKeyword(section['key'])
+        str = '{}[[ {} ]]\n\n'.format(comment, sec)
+
+        for entry in section['body']:
+            str += self.dumpEntry(entry)
+        return str
+
 
     def dumpIdentifier(self, id):
-        if id['namespace']:
-            return '{}/{}'.format(id['namespace'], id['name'])
         return id['name']
+
+    def dumpKeyword(self, kw):
+        if kw['namespace']:
+            return '{}/{}'.format(kw['namespace'], kw['name'])
+        return kw['name']
 
     def dumpPattern(self, pattern):
         if pattern is None:
@@ -71,16 +89,16 @@ class FTLSerializer():
         return '{{ {} }}'.format(source)
 
     def dumpExpression(self, exp):
-        if exp['type'] == 'ExternalArgument':
-            return '${}'.format(exp['name'])
-        elif exp['type'] == 'BuiltinReference':
-            return exp['name']
-        elif exp['type'] == 'EntityReference':
+        if exp['type'] == 'Identifier' or \
+           exp['type'] == 'BuiltinReference' or \
+           exp['type'] == 'EntityReference':
             return self.dumpIdentifier(exp)
+        if exp['type'] == 'ExternalArgument':
+            return '${}'.format(self.dumpIdentifier(exp))
         elif exp['type'] == 'SelectExpression':
             sel = self.dumpExpression(exp['expression'])
-            traits = self.dumpTraits(exp['variants'], 2)
-            return '{} ->\n{}\n'.format(sel, traits)
+            variants = self.dumpMembers(exp['variants'], 2)
+            return '{} ->\n{}\n'.format(sel, variants)
         elif exp['type'] == 'CallExpression':
             id = self.dumpExpression(exp['callee'])
             args = self.dumpCallArgs(exp['args'])
@@ -89,25 +107,23 @@ class FTLSerializer():
             return self.dumpPattern(exp)
         elif exp['type'] == 'Number':
             return exp['value']
+        elif exp['type'] == 'Keyword':
+            return self.dumpKeyword(exp)
         elif exp['type'] == 'MemberExpression':
             obj = self.dumpExpression(exp['object'])
             key = self.dumpExpression(exp['keyword'])
             return '{}[{}]'.format(obj, key)
-        elif exp['type'] == 'Identifier':
-            return self.dumpIdentifier(exp)
 
     def dumpCallArgs(self, args):
         return ', '.join(map(
-            lambda arg: '{}:{}'.format(arg['name'],
+            lambda arg: '{}: {}'.format(arg['name'],
                                        self.dumpExpression(arg['value']))
                 if arg['type'] == 'KeyValueArg' else self.dumpExpression(arg),
             args))
 
-    def dumpTraits(self, traits, indent):
-        px = ' ' * indent
-        return '\n'.join(map(lambda trait: '{}{}[{}] {}'.format(
-            px, 
-            '*' if trait['default'] else '',
-            self.dumpIdentifier(trait['key']),
-            self.dumpPattern(trait['value'])
-        ), traits))
+    def dumpMembers(self, members, indent):
+        return '\n'.join(map(lambda member: '{}[{}] {}'.format(
+            ' ' * (indent - 1) + '*' if member['default'] else ' ' * indent,
+            self.dumpExpression(member['key']),
+            self.dumpPattern(member['value'])
+        ), members))

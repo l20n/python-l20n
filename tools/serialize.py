@@ -24,7 +24,7 @@ def print_l20n(fileType, data):
         print(data)
         l20nParser = ftl.format.parser.FTLParser()
         print('----- AST -----')
-        ast = l20nParser.parseResource(data)
+        [ast, errors] = l20nParser.parseResource(data)
         print(json.dumps(ast, indent=2, ensure_ascii=False))
         print('--------------------')
         result = l20nSerializer.serialize(ast)
