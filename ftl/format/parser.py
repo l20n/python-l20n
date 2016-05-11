@@ -18,7 +18,6 @@ class ParseContext():
         self._length = len(string)
 
         self._lastGoodEntryEnd = 0
-        self._currentBlock = None
 
     def _isIdentifierStart(self, cc):
         return (cc >= 97 and cc <= 122) or \
@@ -44,7 +43,7 @@ class ParseContext():
         errors = []
         comment = None
 
-        self._currentBlock = resource.body
+        section = resource.body
 
         if self._getch() == '#':
             comment = self.getComment()
@@ -58,12 +57,18 @@ class ParseContext():
 
         while self._index < self._length:
             try:
-                self._currentBlock.append(self.getEntry(comment))
+                entry = self.getEntry(comment)
+
+                if entry.type == 'Section':
+                    resource.body.append(entry)
+                    section = entry.body
+                else:
+                    section.append(entry)
                 self._lastGoodEntryEnd = self._index
                 comment = None
             except L10nError as e:
                 errors.append(e)
-                self._currentBlock.append(self.getJunkEntry())
+                section.append(self.getJunkEntry())
 
             self.getWS()
 
@@ -107,9 +112,7 @@ class ParseContext():
 
         self._index += 2
 
-        section = ast.Section(key, [], comment)
-        self._currentBlock = section.body
-        return section
+        return ast.Section(key, [], comment)
 
     def getEntity(self, comment = None):
         id = self.getIdentifier()
