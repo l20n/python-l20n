@@ -21,16 +21,16 @@ def print_l20n(fileType, data):
     if fileType == 'json':
         result = l20nSerializer.serialize(json.loads(data))
     elif fileType == 'ftl':
-        print('----- ORIGINAL -----')
-        print(data)
+        #print('----- ORIGINAL -----')
+        #print(data)
         l20nParser = ftl.format.parser.FTLParser()
-        print('----- AST -----')
+        #print('----- AST -----')
         [ast, errors] = l20nParser.parseResource(data)
-        print(json.dumps(ast, indent=2, ensure_ascii=False))
-        print('--------------------')
+        #print(json.dumps(ast, indent=2, ensure_ascii=False))
+        #print('--------------------')
         result = l20nSerializer.serialize(ast)
     
-    print(result)
+    print(result.encode('utf-8'))
 
 if __name__ == "__main__":
     fileName, fileExtension = os.path.splitext(sys.argv[1])

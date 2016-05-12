@@ -74,7 +74,7 @@ class FTLSerializer():
         for elem in pattern['elements']:
             if elem['type'] == 'TextElement':
                 if '\n' in elem['value']:
-                    str += u'\n | {}'.format(elem['value'].replace('\n', '\n | '))
+                    str += u'\n  | {}'.format(elem['value'].replace('\n', '\n  | '))
                 else:
                     str += elem['value']
             elif elem['type'] == 'Placeable':
