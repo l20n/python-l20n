@@ -9,6 +9,9 @@ setup(name='l20n',
       author='Mozilla',
       author_email='team@mozilla.org',
       url='https://github.com/l20n/python-l20n',
-      packages=['l20n', 'l20n.format', 'ftl', 'ftl.format'],
+      packages=['ftl', 'ftl.format'],
+      install_requires=[
+          'six'
+      ]
      )
 
