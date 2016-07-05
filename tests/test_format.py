@@ -2,6 +2,7 @@ import unittest
 import os
 import codecs
 import json
+from six import with_metaclass
 
 from ftl.format.parser import FTLParser
 from ftl.format.serializer import FTLSerializer
@@ -35,8 +36,7 @@ class TestMeta(type):
         return type.__new__(mcs, name, bases, dict)
 
 
-class L20nParserTestCase(unittest.TestCase, metaclass = TestMeta):
-    __metaclass__ = TestMeta
+class L20nParserTestCase(with_metaclass(TestMeta, unittest.TestCase)):
 
     def setUp(self):
         self.parser = FTLParser()
