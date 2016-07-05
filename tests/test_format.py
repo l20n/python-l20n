@@ -35,7 +35,7 @@ class TestMeta(type):
         return type.__new__(mcs, name, bases, dict)
 
 
-class L20nParserTestCase(unittest.TestCase):
+class L20nParserTestCase(unittest.TestCase, metaclass = TestMeta):
     __metaclass__ = TestMeta
 
     def setUp(self):
