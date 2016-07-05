@@ -110,9 +110,9 @@ class EntityReference(Identifier):
     def __init__(self, name):
         super(EntityReference, self).__init__(name)
 
-class BuiltinReference(Identifier):
+class FunctionReference(Identifier):
     def __init__(self, name):
-        super(BuiltinReference, self).__init__(name)
+        super(FunctionReference, self).__init__(name)
 
 class Keyword(Identifier):
     def __init__(self, name, namespace = None):

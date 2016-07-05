@@ -367,7 +367,7 @@ class ParseContext():
         self._index += 1
 
         if isinstance(exp, ast.EntityReference):
-            exp = ast.BuiltinReference(exp.name)
+            exp = ast.FunctionReference(exp.name)
 
         return ast.CallExpression(exp, args)
 

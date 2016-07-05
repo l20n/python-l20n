@@ -90,7 +90,7 @@ class FTLSerializer():
 
     def dumpExpression(self, exp):
         if exp['type'] == 'Identifier' or \
-           exp['type'] == 'BuiltinReference' or \
+           exp['type'] == 'FunctionReference' or \
            exp['type'] == 'EntityReference':
             return self.dumpIdentifier(exp)
         if exp['type'] == 'ExternalArgument':
