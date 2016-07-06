@@ -1,5 +1,3 @@
-from . import ast
-
 class FTLSerializer():
     def serialize(self, ast):
         body = ast['body']
@@ -46,15 +44,14 @@ class FTLSerializer():
         return u'# {}'.format(comment['content'].replace('\n', u'\n# '))
 
     def dumpSection(self, section):
-        comment = u'{}\n'.format(
-            self.dumpComment(section['comment'])) if section['comment'] else u''
+        comment = u'{}\n'.format(self.dumpComment(
+            section['comment'])) if section['comment'] else u''
         sec = self.dumpKeyword(section['key'])
         str = u'\n\n{}[[ {} ]]\n\n'.format(comment, sec)
 
         for entry in section['body']:
             str += self.dumpEntry(entry)
         return str
-
 
     def dumpIdentifier(self, id):
         return id['name']
@@ -74,7 +71,8 @@ class FTLSerializer():
         for elem in pattern['elements']:
             if elem['type'] == 'TextElement':
                 if '\n' in elem['value']:
-                    str += u'\n  | {}'.format(elem['value'].replace('\n', '\n  | '))
+                    str += u'\n  | {}'.format(
+                        elem['value'].replace('\n', '\n  | '))
                 else:
                     str += elem['value']
             elif elem['type'] == 'Placeable':
@@ -116,8 +114,9 @@ class FTLSerializer():
 
     def dumpCallArgs(self, args):
         return u', '.join(map(
-            lambda arg: u'{}: {}'.format(arg['name'],
-                                       self.dumpExpression(arg['value']))
+            lambda arg:
+                u'{}: {}'.format(arg['name'],
+                                 self.dumpExpression(arg['value']))
                 if arg['type'] == 'KeyValueArg' else self.dumpExpression(arg),
             args))
 

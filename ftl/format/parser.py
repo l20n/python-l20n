@@ -1,8 +1,9 @@
 
 from . import ast
 
+
 class L10nError(Exception):
-    def __init__(self, message, pos = None, context = None):
+    def __init__(self, message, pos=None, context=None):
         self.name = 'L10nError'
         self.message = message
         self.pos = pos
@@ -24,14 +25,14 @@ class ParseContext():
                (cc >= 65 and cc <= 90) or \
                 cc == 95
 
-    def _getch(self, pos = None, offset = 0):
+    def _getch(self, pos=None, offset=0):
         if pos is None:
             pos = self._index
         if pos + offset >= self._length:
             return ''
         return self._source[pos + offset]
 
-    def _getcc(self, pos = None, offset = 0):
+    def _getcc(self, pos=None, offset=0):
         if pos is None:
             pos = self._index
         if pos + offset >= self._length:
@@ -74,9 +75,9 @@ class ParseContext():
 
         return [resource, errors]
 
-    def getEntry(self, comment = None):
-        if (self._index is not 0 and \
-            self._source[self._index - 1] != '\n'):
+    def getEntry(self, comment=None):
+        if self._index is not 0 and \
+                self._source[self._index - 1] != '\n':
             raise self.error('Expected new line and a new entry')
 
         if comment is None and self._getch() == '#':
@@ -88,12 +89,12 @@ class ParseContext():
             return self.getSection(comment)
 
         if self._index < self._length and \
-          self._getch() != '\n':
-              return self.getEntity(comment)
+                self._getch() != '\n':
+            return self.getEntity(comment)
 
         return comment
 
-    def getSection(self, comment = None):
+    def getSection(self, comment=None):
         self._index += 1
         if self._getch() != '[':
             raise self.error('Expected "[[" to open a section')
@@ -114,7 +115,7 @@ class ParseContext():
 
         return ast.Section(key, [], comment)
 
-    def getEntity(self, comment = None):
+    def getEntity(self, comment=None):
         id = self.getIdentifier()
 
         members = []
@@ -141,15 +142,14 @@ class ParseContext():
             self.getLineWS()
             ch = self._getch()
 
-        if ((ch == '[' and self._source[self._index + 1] != '[') or \
-            ch == '*'):
+        if (ch == '[' and self._source[self._index + 1] != '[') or \
+                ch == '*':
             members = self.getMembers()
         elif value is None:
-            raise self.error('Expected a value (like: " = value") or a ' + \
+            raise self.error('Expected a value (like: " = value") or a ' +
                              'trait (like: "[key] value")')
 
         return ast.Entity(id, value, members, comment)
-
 
     def getWS(self):
         cc = self._getcc()
@@ -175,13 +175,13 @@ class ParseContext():
             self._index += 1
             cc = self._getcc()
         elif len(name) == 0:
-            raise self.error('Expected an identifier (starting with [a-zA-Z_])')
-
+            raise self.error(
+                'Expected an identifier (starting with [a-zA-Z_])')
 
         while (cc >= 97 and cc <= 122) or \
               (cc >= 65 and cc <= 90) or \
               (cc >= 48 and cc <= 57) or \
-               cc == 95 or cc == 45:
+                cc == 95 or cc == 45:
             self._index += 1
             cc = self._getcc()
 
@@ -205,12 +205,13 @@ class ParseContext():
             self._index += 1
             cc = self._getcc()
         elif len(name) == 0:
-            raise self.error('Expected an identifier (starting with [a-zA-Z_])')
+            raise self.error(
+                'Expected an identifier (starting with [a-zA-Z_])')
 
         while (cc >= 97 and cc <= 122) or \
-           (cc >= 65 and cc <= 90) or \
-           (cc >= 48 and cc <= 57) or \
-           cc == 95 or cc == 45 or cc == 32:
+                (cc >= 65 and cc <= 90) or \
+                (cc >= 48 and cc <= 57) or \
+                cc == 95 or cc == 45 or cc == 32:
             self._index += 1
             cc = self._getcc()
 
@@ -245,9 +246,9 @@ class ParseContext():
                 self._index += 1
                 self.getLineWS()
                 if self._getch() != '|':
-                    break;
+                    break
                 if firstLine and len(buffer):
-                    raise self.error('Multiline string should have the ID ' + \
+                    raise self.error('Multiline string should have the ID ' +
                                      'empty')
                 firstLine = False
                 self._index += 1
@@ -350,7 +351,7 @@ class ParseContext():
                 raise self.error('Expected members for the select expression')
 
         if members is None:
-            return selector;
+            return selector
 
         return ast.SelectExpression(selector, members)
 
@@ -395,13 +396,14 @@ class ParseContext():
 
                     if isinstance(val, ast.EntityReference) or \
                        isinstance(val, ast.MemberExpression):
-                        self._index = self._source.rfind('=', 0, self._index) + 1
+                        self._index = \
+                                self._source.rfind('=', 0, self._index) + 1
                         raise self.error('Expected string in quotes')
 
                     args.append(ast.KeyValueArg(exp.name, val))
                 else:
                     args.append(exp)
-            
+
             self.getLineWS()
 
             if self._getch() == ')':
@@ -458,11 +460,11 @@ class ParseContext():
         members = []
 
         while self._index < self._length:
-            if (self._getch() != '[' or \
+            if (self._getch() != '[' or
                 self._getch(None, 1) == '[') and \
                self._getch() != '*':
                 break
-            
+
             default = False
 
             if self._getch() == '*':
@@ -496,7 +498,6 @@ class ParseContext():
             literal = self.getNumber()
         else:
             literal = self.getKeyword()
-
 
         if self._getch() != ']':
             raise self.error('Expected "]"')
@@ -549,7 +550,7 @@ class ParseContext():
 
         return ast.Comment(content)
 
-    def error(self, message, start = None):
+    def error(self, message, start=None):
         pos = self._index
 
         if start is None:
@@ -560,12 +561,12 @@ class ParseContext():
         context = self._source[start: pos + 10]
 
         msg = '\n\n ' + message + '\nat pos ' + str(pos) + \
-          ':\n------\n...' + context + '\n------'
+            ':\n------\n...' + context + '\n------'
         err = L10nError(msg)
 
-        row = len(self._source[0:pos].split('\n'))
-        col = pos - self._source.rfind('\n', 0, pos - 1)
-        #err._pos = {start: pos, end: None, col: col, row: row}
+        # row = len(self._source[0:pos].split('\n'))
+        # col = pos - self._source.rfind('\n', 0, pos - 1)
+        # err._pos = {start: pos, end: None, col: col, row: row}
         err.offset = pos - start
         err.description = message
         err.context = context
@@ -629,7 +630,7 @@ class ParseContext():
 
 
 class FTLParser():
-  def parseResource(self, string):
-    parseContext = ParseContext(string)
-    [ast, errors] = parseContext.getResource()
-    return [ast.toJSON(), errors]
+    def parseResource(self, string):
+        parseContext = ParseContext(string)
+        [ast, errors] = parseContext.getResource()
+        return [ast.toJSON(), errors]

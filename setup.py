@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-import os
 
 setup(name='l20n',
       version='0.2',
@@ -13,5 +12,4 @@ setup(name='l20n',
       install_requires=[
           'six'
       ]
-     )
-
+      )
