@@ -4,8 +4,8 @@ import codecs
 import json
 from six import with_metaclass
 
-from ftl.format.parser import FTLParser
-from ftl.format.serializer import FTLSerializer
+from l20n.format.parser import FTLParser
+from l20n.format.serializer import FTLSerializer
 
 fixtures = os.path.join(
     os.path.dirname(__file__),
