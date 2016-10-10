@@ -215,7 +215,10 @@ class ParseContext():
             self._index += 1
             cc = self._getcc()
 
-        name += self._source[start:self._index].rstrip()
+        while self._getcc(offset=-1) == 32:
+            self._index -= 1
+
+        name += self._source[start:self._index]
         return ast.Keyword(name, namespace)
 
     def getPattern(self):

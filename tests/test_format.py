@@ -1,8 +1,11 @@
 import unittest
 import os
+import sys
 import codecs
 import json
 from six import with_metaclass
+
+sys.path.append('.')
 
 from l20n.format.parser import FTLParser
 from l20n.format.serializer import FTLSerializer
