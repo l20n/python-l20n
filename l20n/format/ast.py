@@ -1,25 +1,52 @@
 import json
 
 
-def attr2json(attr):
-    if isinstance(attr, Node):
-        return attr.toJSON()
-    elif isinstance(attr, list):
-        return [attr2json(i) for i in attr]
+def to_json(value):
+    if isinstance(value, Node):
+        return value.toJSON()
+    if isinstance(value, list):
+        return map(to_json, value)
     else:
-        return attr
+        return value
 
 
 class Node(object):
-    def __init__(self):
-        self.type = self.__class__.__name__
+    def traverse(self, fun):
+        """Postorder-traverse this node and apply `fun` to all child nodes.
+
+        Traverse this node depth-first applying `fun` to subnodes and leaves.
+        Children are processed before parents (postorder traversal).
+
+        Return a new instance of the node.
+        """
+
+        def visit(value):
+            """Call `fun` on `value` and its descendants."""
+            if isinstance(value, Node):
+                return value.traverse(fun)
+            if isinstance(value, list):
+                return fun(map(visit, value))
+            else:
+                return fun(value)
+
+        node = self.__class__(
+            **{
+                name: visit(value)
+                for name, value in vars(self).items()
+            }
+        )
+
+        return fun(node)
 
     def toJSON(self):
-        fields = {}
-        for key in vars(self):
-            attr = getattr(self, key)
-            fields[key] = attr2json(attr)
-        return fields
+        obj = {
+            name: to_json(value)
+            for name, value in vars(self).items()
+        }
+        obj.update(
+            {'type': self.__class__.__name__}
+        )
+        return obj
 
     def __str__(self):
         return json.dumps(self.toJSON())
@@ -31,11 +58,30 @@ class Node(object):
         }
 
 
-class Resource(Node):
+class NodeList(Node):
     def __init__(self, body=None, comment=None):
-        super(Resource, self).__init__()
+        super(NodeList, self).__init__()
         self.body = body or []
         self.comment = comment
+
+    def entities(self):
+        for entry in self.body:
+            if isinstance(entry, Entity):
+                yield entry
+            if isinstance(entry, Section):
+                for entity in entry.entities():
+                    yield entity
+
+
+class Resource(NodeList):
+    def __init__(self, body=None, comment=None):
+        super(Resource, self).__init__(body, comment)
+
+
+class Section(NodeList):
+    def __init__(self, key, body=None, comment=None):
+        super(Section, self).__init__(body, comment)
+        self.key = key
 
 
 class Entry(Node):
@@ -49,19 +95,12 @@ class Identifier(Node):
         self.name = name
 
 
-class Section(Node):
-    def __init__(self, key, body=None, comment=None):
-        super(Section, self).__init__()
-        self.key = key
-        self.body = body or []
-        self.comment = comment
-
-
 class Pattern(Node):
-    def __init__(self, source, elements):
+    def __init__(self, source, elements, quoted=False):
         super(Pattern, self).__init__()
         self.source = source
         self.elements = elements
+        self.quoted = quoted
 
 
 class Member(Node):

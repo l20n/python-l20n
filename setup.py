@@ -17,7 +17,8 @@ setup(name='l20n',
             'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3.5',
       ],
-      packages=['l20n', 'l20n.format'],
+      packages=['l20n', 'l20n.format', 'l20n.migrate'],
+      package_data={'l20n.migrate': ['cldr_data/*.json']},
       install_requires=[
           'six'
       ]
