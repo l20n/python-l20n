@@ -4,8 +4,8 @@ import sys
 
 sys.path.append('./')
 import codecs
-import ftl.format.parser
-import ftl.format.ast
+import l20n.format.parser
+import l20n.format.ast
 import json
 
 def read_file(path):
@@ -14,7 +14,7 @@ def read_file(path):
     return text
 
 def print_ast(fileType, data):
-    ftlParser = ftl.format.parser.FTLParser()
+    ftlParser = l20n.format.parser.FTLParser()
     [ast, errors] = ftlParser.parseResource(data)
     print(json.dumps(ast, indent=2, ensure_ascii=False))
 
