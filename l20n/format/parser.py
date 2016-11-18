@@ -13,12 +13,14 @@ MAX_PLACEABLES = 100
 
 
 class ParseContext():
-    def __init__(self, string):
+    def __init__(self, string, with_source=True):
         self._source = string
         self._index = 0
         self._length = len(string)
 
         self._lastGoodEntryEnd = 0
+
+        self.with_source = with_source
 
     def _isIdentifierStart(self, cc):
         return (cc >= 97 and cc <= 122) or \
@@ -60,7 +62,7 @@ class ParseContext():
             try:
                 entry = self.getEntry(comment)
 
-                if entry.type == 'Section':
+                if isinstance(entry, ast.Section):
                     resource.body.append(entry)
                     section = entry.body
                 else:
@@ -299,9 +301,11 @@ class ParseContext():
             else:
                 return None
 
-        pattern = ast.Pattern(source, content)
-        pattern._quoteDelim = quoteDelimited is not None
-        return pattern
+        return ast.Pattern(
+            source=source if self.with_source else None,
+            elements=content,
+            quoted=quoteDelimited is not None
+        )
 
     def getPlaceable(self):
         self._index += 1
@@ -633,7 +637,11 @@ class ParseContext():
 
 
 class FTLParser():
-    def parseResource(self, string):
-        parseContext = ParseContext(string)
+    def parse(self, string, with_source=True):
+        parseContext = ParseContext(string, with_source)
+        return parseContext.getResource()
+
+    def parseResource(self, string, with_source=True):
+        parseContext = ParseContext(string, with_source)
         [ast, errors] = parseContext.getResource()
         return [ast.toJSON(), errors]

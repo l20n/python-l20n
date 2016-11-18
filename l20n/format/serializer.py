@@ -31,13 +31,16 @@ class FTLSerializer():
             str += u'\n' + self.dumpComment(entity['comment']) + u'\n'
 
         id = self.dumpIdentifier(entity['id'])
-        value = self.dumpPattern(entity['value'])
+        str += u'{} ='.format(id)
+
+        if (entity['value']):
+            value = self.dumpPattern(entity['value'])
+            str += u' {}'.format(value)
 
         if len(entity['traits']):
             traits = self.dumpMembers(entity['traits'], 2)
-            str += u'{} = {}\n{}'.format(id, value, traits)
-        else:
-            str += u'{} = {}'.format(id, value)
+            str += u'\n{}'.format(traits)
+
         return str
 
     def dumpComment(self, comment):
@@ -64,8 +67,6 @@ class FTLSerializer():
     def dumpPattern(self, pattern):
         if pattern is None:
             return u''
-        if pattern['_quoteDelim']:
-            return u'"{}"'.format(pattern['source'])
         str = u''
 
         for elem in pattern['elements']:
@@ -77,6 +78,9 @@ class FTLSerializer():
                     str += elem['value']
             elif elem['type'] == 'Placeable':
                 str += self.dumpPlaceable(elem)
+
+        if pattern['quoted']:
+            return u'"{}"'.format(str)
         return str
 
     def dumpPlaceable(self, placeable):
