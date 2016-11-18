@@ -11,7 +11,7 @@ except ImportError:
 
 from l20n.migrate.util import parse, ftl, ftl_resource_to_json
 from l20n.migrate.merge import merge_resource
-from l20n.migrate.transforms import COPY, SOURCE
+from l20n.migrate.transforms import LITERAL, LITERAL_FROM
 
 
 class MockContext(unittest.TestCase):
@@ -58,30 +58,24 @@ class TestMergeMessages(MockContext):
         self.transforms = [
             FTL.Entity(
                 FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(None, 'aboutDownloads.title')
-                )
+                value=LITERAL_FROM(None, 'aboutDownloads.title')
             ),
             FTL.Entity(
                 FTL.Identifier('about'),
-                value=COPY('Hardcoded Value')
+                value=LITERAL('Hardcoded Value')
             ),
             FTL.Entity(
                 FTL.Identifier('open-menuitem'),
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(None, 'aboutDownloads.open')
-                        )
+                        LITERAL_FROM(None, 'aboutDownloads.open')
                     ),
                 ]
             ),
             FTL.Entity(
                 FTL.Identifier('download-state-downloading'),
-                value=COPY(
-                    SOURCE(None, 'downloadState.downloading')
-                )
+                value=LITERAL_FROM(None, 'downloadState.downloading')
             )
         ]
 
@@ -172,26 +166,20 @@ class TestMergeAllEntries(MockContext):
         self.transforms = [
             FTL.Entity(
                 FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(None, 'aboutDownloads.title')
-                )
+                value=LITERAL_FROM(None, 'aboutDownloads.title')
             ),
             FTL.Entity(
                 FTL.Identifier('open-menuitem'),
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(None, 'aboutDownloads.open')
-                        )
+                        LITERAL_FROM(None, 'aboutDownloads.open')
                     ),
                 ]
             ),
             FTL.Entity(
                 FTL.Identifier('download-state-downloading'),
-                value=COPY(
-                    SOURCE(None, 'downloadState.downloading')
-                )
+                value=LITERAL_FROM(None, 'downloadState.downloading')
             )
         ]
 
@@ -291,15 +279,11 @@ class TestMergeSubset(MockContext):
         self.transforms = [
             FTL.Entity(
                 FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(None, 'aboutDownloads.title')
-                )
+                value=LITERAL_FROM(None, 'aboutDownloads.title')
             ),
             FTL.Entity(
                 FTL.Identifier('download-state-downloading'),
-                value=COPY(
-                    SOURCE(None, 'downloadState.downloading')
-                )
+                value=LITERAL_FROM(None, 'downloadState.downloading')
             )
         ]
 

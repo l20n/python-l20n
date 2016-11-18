@@ -8,7 +8,8 @@ import l20n.format.ast as FTL
 from l20n.migrate.util import ftl_resource_to_json, to_json
 from l20n.migrate.context import MergeContext
 from l20n.migrate.transforms import (
-    CONCAT, COPY, EXTERNAL, PLURALS, REPLACE, SOURCE
+    CONCAT, EXTERNAL, LITERAL, LITERAL_FROM, PLURALS_FROM, REPLACE,
+    REPLACE_FROM
 )
 
 
@@ -35,29 +36,23 @@ class TestMergeAboutDownloads(unittest.TestCase):
         self.ctx.add_transforms('aboutDownloads.ftl', [
             FTL.Entity(
                 id=FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.title'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.title'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('header'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.header'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.header'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('empty'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.empty'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.empty'
                 )
             ),
             FTL.Entity(
@@ -65,11 +60,9 @@ class TestMergeAboutDownloads(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(
-                                'aboutDownloads.dtd',
-                                'aboutDownloads.open'
-                            )
+                        LITERAL_FROM(
+                            'aboutDownloads.dtd',
+                            'aboutDownloads.open'
                         )
                     )
                 ]
@@ -79,11 +72,9 @@ class TestMergeAboutDownloads(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(
-                                'aboutDownloads.dtd',
-                                'aboutDownloads.retry'
-                            )
+                        LITERAL_FROM(
+                            'aboutDownloads.dtd',
+                            'aboutDownloads.retry'
                         )
                     )
                 ]
@@ -93,11 +84,9 @@ class TestMergeAboutDownloads(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(
-                                'aboutDownloads.dtd',
-                                'aboutDownloads.remove'
-                            )
+                        LITERAL_FROM(
+                            'aboutDownloads.dtd',
+                            'aboutDownloads.remove'
                         )
                     )
                 ]
@@ -107,11 +96,9 @@ class TestMergeAboutDownloads(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(
-                                'aboutDownloads.dtd',
-                                'aboutDownloads.pause'
-                            )
+                        LITERAL_FROM(
+                            'aboutDownloads.dtd',
+                            'aboutDownloads.pause'
                         )
                     )
                 ]
@@ -121,11 +108,9 @@ class TestMergeAboutDownloads(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(
-                                'aboutDownloads.dtd',
-                                'aboutDownloads.resume'
-                            )
+                        LITERAL_FROM(
+                            'aboutDownloads.dtd',
+                            'aboutDownloads.resume'
                         )
                     )
                 ]
@@ -135,11 +120,9 @@ class TestMergeAboutDownloads(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(
-                                'aboutDownloads.dtd',
-                                'aboutDownloads.cancel'
-                            )
+                        LITERAL_FROM(
+                            'aboutDownloads.dtd',
+                            'aboutDownloads.cancel'
                         )
                     )
                 ]
@@ -149,31 +132,25 @@ class TestMergeAboutDownloads(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         FTL.Keyword('label', 'html'),
-                        COPY(
-                            SOURCE(
-                                'aboutDownloads.dtd',
-                                'aboutDownloads.removeAll'
-                            )
+                        LITERAL_FROM(
+                            'aboutDownloads.dtd',
+                            'aboutDownloads.removeAll'
                         )
                     )
                 ]
             ),
             FTL.Entity(
                 id=FTL.Identifier('delete-all-title'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadAction.deleteAll'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.properties',
+                    'downloadAction.deleteAll'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('delete-all-message'),
-                value=PLURALS(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadMessage.deleteAll'
-                    ),
+                value=PLURALS_FROM(
+                    'aboutDownloads.properties',
+                    'downloadMessage.deleteAll',
                     FTL.ExternalArgument('num'),
                     lambda var: REPLACE(
                         var,
@@ -183,56 +160,44 @@ class TestMergeAboutDownloads(unittest.TestCase):
             ),
             FTL.Entity(
                 id=FTL.Identifier('download-state-downloading'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadState.downloading'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.properties',
+                    'downloadState.downloading'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('download-state-canceled'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadState.canceled'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.properties',
+                    'downloadState.canceled'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('download-state-failed'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadState.failed'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.properties',
+                    'downloadState.failed'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('download-state-paused'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadState.paused'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.properties',
+                    'downloadState.paused'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('download-state-starting'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadState.starting'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.properties',
+                    'downloadState.starting'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('download-size-unknown'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.properties',
-                        'downloadState.unknownSize'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.properties',
+                    'downloadState.unknownSize'
                 )
             ),
         ])
@@ -329,63 +294,51 @@ class TestMergeAboutDialog(unittest.TestCase):
             FTL.Entity(
                 id=FTL.Identifier('update-failed'),
                 value=CONCAT(
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'update.failed.start'),
-                    ),
-                    COPY('<a>'),
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'update.failed.linkText'),
-                    ),
-                    COPY('</a>'),
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'update.failed.end'),
-                    ),
+                    LITERAL_FROM('aboutDialog.dtd', 'update.failed.start'),
+                    LITERAL('<a>'),
+                    LITERAL_FROM('aboutDialog.dtd', 'update.failed.linkText'),
+                    LITERAL('</a>'),
+                    LITERAL_FROM('aboutDialog.dtd', 'update.failed.end'),
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('channel-desc'),
                 value=CONCAT(
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'channel.description.start'),
+                    LITERAL_FROM(
+                        'aboutDialog.dtd', 'channel.description.start'
                     ),
                     EXTERNAL('channelname'),
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'channel.description.end'),
-                    )
+                    LITERAL_FROM('aboutDialog.dtd', 'channel.description.end'),
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('community'),
                 value=CONCAT(
-                    REPLACE(
-                        SOURCE('aboutDialog.dtd', 'community.start'),
+                    REPLACE_FROM(
+                        'aboutDialog.dtd',
+                        'community.start',
                         {
                             '&brandShortName;': [
                                 FTL.ExternalArgument('brand-short-name')
                             ]
                         }
                     ),
-                    COPY('<a>'),
-                    REPLACE(
-                        SOURCE('aboutDialog.dtd', 'community.mozillaLink'),
+                    LITERAL('<a>'),
+                    REPLACE_FROM(
+                        'aboutDialog.dtd',
+                        'community.mozillaLink',
                         {
                             '&vendorShortName;': [
                                 FTL.ExternalArgument('vendor-short-name')
                             ]
                         }
                     ),
-                    COPY('</a>'),
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'community.middle')
-                    ),
-                    COPY('<a>'),
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'community.creditsLink')
-                    ),
-                    COPY('</a>'),
-                    COPY(
-                        SOURCE('aboutDialog.dtd', 'community.end')
-                    )
+                    LITERAL('</a>'),
+                    LITERAL_FROM('aboutDialog.dtd', 'community.middle'),
+                    LITERAL('<a>'),
+                    LITERAL_FROM('aboutDialog.dtd', 'community.creditsLink'),
+                    LITERAL('</a>'),
+                    LITERAL_FROM('aboutDialog.dtd', 'community.end')
                 )
             ),
         ])

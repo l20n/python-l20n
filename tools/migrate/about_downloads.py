@@ -1,7 +1,7 @@
 # coding=utf8
 
 import l20n.format.ast as FTL
-from l20n.migrate import COPY, PLURALS, REPLACE, SOURCE
+from l20n.migrate import LITERAL_FROM, PLURALS_FROM, REPLACE
 
 
 def migrate(ctx):
@@ -17,29 +17,23 @@ def migrate(ctx):
     ctx.add_transforms('mobile/aboutDownloads.ftl', [
         FTL.Entity(
             id=FTL.Identifier('title'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.dtd',
-                    'aboutDownloads.title'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.dtd',
+                'aboutDownloads.title'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('header'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.dtd',
-                    'aboutDownloads.header'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.dtd',
+                'aboutDownloads.header'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('empty'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.dtd',
-                    'aboutDownloads.empty'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.dtd',
+                'aboutDownloads.empty'
             )
         ),
         FTL.Entity(
@@ -47,11 +41,9 @@ def migrate(ctx):
             traits=[
                 FTL.Member(
                     FTL.Keyword('label', 'html'),
-                    COPY(
-                        SOURCE(
-                            'mobile/android/chrome/aboutDownloads.dtd',
-                            'aboutDownloads.open'
-                        )
+                    LITERAL_FROM(
+                        'mobile/android/chrome/aboutDownloads.dtd',
+                        'aboutDownloads.open'
                     )
                 )
             ]
@@ -61,11 +53,9 @@ def migrate(ctx):
             traits=[
                 FTL.Member(
                     FTL.Keyword('label', 'html'),
-                    COPY(
-                        SOURCE(
-                            'mobile/android/chrome/aboutDownloads.dtd',
-                            'aboutDownloads.retry'
-                        )
+                    LITERAL_FROM(
+                        'mobile/android/chrome/aboutDownloads.dtd',
+                        'aboutDownloads.retry'
                     )
                 )
             ]
@@ -75,11 +65,9 @@ def migrate(ctx):
             traits=[
                 FTL.Member(
                     FTL.Keyword('label', 'html'),
-                    COPY(
-                        SOURCE(
-                            'mobile/android/chrome/aboutDownloads.dtd',
-                            'aboutDownloads.remove'
-                        )
+                    LITERAL_FROM(
+                        'mobile/android/chrome/aboutDownloads.dtd',
+                        'aboutDownloads.remove'
                     )
                 )
             ]
@@ -89,11 +77,9 @@ def migrate(ctx):
             traits=[
                 FTL.Member(
                     FTL.Keyword('label', 'html'),
-                    COPY(
-                        SOURCE(
-                            'mobile/android/chrome/aboutDownloads.dtd',
-                            'aboutDownloads.pause'
-                        )
+                    LITERAL_FROM(
+                        'mobile/android/chrome/aboutDownloads.dtd',
+                        'aboutDownloads.pause'
                     )
                 )
             ]
@@ -103,11 +89,9 @@ def migrate(ctx):
             traits=[
                 FTL.Member(
                     FTL.Keyword('label', 'html'),
-                    COPY(
-                        SOURCE(
-                            'mobile/android/chrome/aboutDownloads.dtd',
-                            'aboutDownloads.resume'
-                        )
+                    LITERAL_FROM(
+                        'mobile/android/chrome/aboutDownloads.dtd',
+                        'aboutDownloads.resume'
                     )
                 )
             ]
@@ -117,11 +101,9 @@ def migrate(ctx):
             traits=[
                 FTL.Member(
                     FTL.Keyword('label', 'html'),
-                    COPY(
-                        SOURCE(
-                            'mobile/android/chrome/aboutDownloads.dtd',
-                            'aboutDownloads.cancel'
-                        )
+                    LITERAL_FROM(
+                        'mobile/android/chrome/aboutDownloads.dtd',
+                        'aboutDownloads.cancel'
                     )
                 )
             ]
@@ -131,31 +113,25 @@ def migrate(ctx):
             traits=[
                 FTL.Member(
                     FTL.Keyword('label', 'html'),
-                    COPY(
-                        SOURCE(
-                            'mobile/android/chrome/aboutDownloads.dtd',
-                            'aboutDownloads.removeAll'
-                        )
+                    LITERAL_FROM(
+                        'mobile/android/chrome/aboutDownloads.dtd',
+                        'aboutDownloads.removeAll'
                     )
                 )
             ]
         ),
         FTL.Entity(
             id=FTL.Identifier('delete-all-title'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadAction.deleteAll'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadAction.deleteAll'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('delete-all-message'),
-            value=PLURALS(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadMessage.deleteAll'
-                ),
+            value=PLURALS_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadMessage.deleteAll',
                 FTL.ExternalArgument('num'),
                 lambda var: REPLACE(
                     var,
@@ -165,56 +141,44 @@ def migrate(ctx):
         ),
         FTL.Entity(
             id=FTL.Identifier('download-state-downloading'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadState.downloading'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadState.downloading'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('download-state-canceled'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadState.canceled'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadState.canceled'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('download-state-failed'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadState.failed'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadState.failed'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('download-state-paused'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadState.paused'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadState.paused'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('download-state-starting'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadState.starting'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadState.starting'
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('download-size-unknown'),
-            value=COPY(
-                SOURCE(
-                    'mobile/android/chrome/aboutDownloads.properties',
-                    'downloadState.unknownSize'
-                )
+            value=LITERAL_FROM(
+                'mobile/android/chrome/aboutDownloads.properties',
+                'downloadState.unknownSize'
             )
         ),
     ])

@@ -19,21 +19,11 @@ class Transform(FTL.Node):
 
 
 class SOURCE(Transform):
-    """Declare the source translation to be migrated with other transforms."""
-    def __init__(self, path, key):
-        self.path = path
-        self.key = key
+    """Declare the source translation to be migrated with other transforms.
 
-    def __call__(self, ctx):
-        return ctx.get_source(self.path, self.key)
-
-
-class COPY(Transform):
-    """Copy the translation value from the given source.
-
-    The translation must be a simple value without interpolations nor plural
-    variants.  All \uXXXX will be converted to the literal characters they
-    encode.
+    When evaluated `SOURCE` returns a simple string value.  All \uXXXX from the
+    original translations are converted beforehand to the literal characters
+    they encode.
 
     HTML entities are left unchanged for now because we can't know if they
     should be converted to the characters they represent or not.  Consider the
@@ -51,17 +41,39 @@ class COPY(Transform):
     # XXX Perhaps there's a strict subset of HTML entities which must or must
     # not be replaced?
 
-    def __init__(self, source):
-        self.source = source
+    def __init__(self, path, key):
+        self.path = path
+        self.key = key
 
     def __call__(self, ctx):
-        return FTL.Pattern(
-            source=None,
-            elements=[FTL.TextElement(self.source)],
-            quoted=(
-                self.source.startswith(' ') or self.source.endswith(' ')
-            )
+        return ctx.get_source(self.path, self.key)
+
+
+class LITERAL(Transform):
+    """Create a Pattern with the literal text `value`.
+
+    This transform is used by `LITERAL_FROM` and can be used on its own with
+    `CONCAT`.
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __call__(self, ctx):
+        elements = [FTL.TextElement(self.value)]
+        quoted = (
+            self.value.startswith(' ') or self.value.endswith(' ')
         )
+
+        return FTL.Pattern(None, elements, quoted)
+
+
+class LITERAL_FROM(SOURCE):
+    """Create a Pattern with the translation value from the given source."""
+
+    def __call__(self, ctx):
+        source = super(self.__class__, self).__call__(ctx)
+        return LITERAL(source)(ctx)
 
 
 class EXTERNAL(Transform):
@@ -88,20 +100,21 @@ class REPLACE(Transform):
     interpolated.
     """
 
-    def __init__(self, source, replacements):
-        self.source = source
+    def __init__(self, value, replacements):
+        self.value = value
         self.replacements = replacements
 
     def __call__(self, ctx):
+
         # Only replace placeable which are present in the translation.
         replacements = {
-            k: v for k, v in self.replacements.iteritems() if k in self.source
+            k: v for k, v in self.replacements.iteritems() if k in self.value
         }
 
         # Order the original placeables by their position in the translation.
         keys_in_order = sorted(
             replacements.keys(),
-            lambda x, y: self.source.find(x) - self.source.find(y)
+            lambda x, y: self.value.find(x) - self.value.find(y)
         )
 
         # Used to reduce the `keys_in_order` list.
@@ -132,32 +145,48 @@ class REPLACE(Transform):
             return not isinstance(elem, FTL.TextElement) or len(elem.value)
 
         # Start with an empty list of elements and the original translation.
-        init = ([], FTL.TextElement(self.source))
+        init = ([], FTL.TextElement(self.value))
         parts, tail = reduce(replace, keys_in_order, init)
 
         # Explicitly concat the trailing part to get the full list of elements
         # and filter out the empty ones.
         elements = filter(is_non_empty, parts + [tail])
-        quoted = self.source.startswith(' ') or self.source.endswith(' ')
+        quoted = self.value.startswith(' ') or self.value.endswith(' ')
 
         return FTL.Pattern(None, elements, quoted)
+
+
+class REPLACE_FROM(SOURCE):
+    """Create a Pattern with interpolations from given source.
+
+    Interpolations in the translation value from the given source will be
+    replaced with FTL placeables using the `REPLACE` transform.
+    """
+
+    def __init__(self, path, key, replacements):
+        super(self.__class__, self).__init__(path, key)
+        self.replacements = replacements
+
+    def __call__(self, ctx):
+        value = super(self.__class__, self).__call__(ctx)
+        return REPLACE(value, self.replacements)(ctx)
 
 
 class PLURALS(Transform):
     """Convert semicolon-separated variants into a select expression.
 
     Build an `FTL.SelectExpression` with the supplied `selector` and variants
-    extracted from the `source`.  Each variant will be run through the
+    extracted from the source.  Each variant will be run through the
     `foreach` function, which should return an `FTL.Node`.
     """
 
-    def __init__(self, source, selector, foreach):
-        self.source = source
+    def __init__(self, value, selector, foreach):
+        self.value = value
         self.selector = selector
         self.foreach = foreach
 
     def __call__(self, ctx):
-        variants = self.source.split(';')
+        variants = self.value.split(';')
         keys = ctx.plural_categories
         last_index = min(len(variants), len(keys)) - 1
 
@@ -180,6 +209,24 @@ class PLURALS(Transform):
         elements = [FTL.Placeable([select])]
 
         return FTL.Pattern(None, elements, quoted=False)
+
+
+class PLURALS_FROM(SOURCE):
+    """Create a Pattern with plurals from given source.
+
+    Semi-colon separated variants in the translation value from the given
+    source will be replaced with an FTL select expression using the `PLURALS`
+    transform.
+    """
+
+    def __init__(self, path, key, selector, foreach):
+        super(self.__class__, self).__init__(path, key)
+        self.selector = selector
+        self.foreach = foreach
+
+    def __call__(self, ctx):
+        value = super(self.__class__, self).__call__(ctx)
+        return PLURALS(value, self.selector, self.foreach)(ctx)
 
 
 class CONCAT(Transform):

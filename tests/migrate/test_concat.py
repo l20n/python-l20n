@@ -10,7 +10,7 @@ except ImportError:
 
 from l20n.migrate.util import parse, ftl_message_to_json
 from l20n.migrate.transforms import (
-    evaluate, CONCAT, COPY, EXTERNAL, REPLACE, SOURCE
+    evaluate, CONCAT, LITERAL_FROM, EXTERNAL, REPLACE_FROM, LITERAL
 )
 
 
@@ -36,9 +36,7 @@ class TestConcatCopy(MockContext):
         msg = FTL.Entity(
             FTL.Identifier('hello'),
             value=CONCAT(
-                COPY(
-                    SOURCE(self.strings, 'hello'),
-                ),
+                LITERAL_FROM(self.strings, 'hello'),
             )
         )
 
@@ -53,12 +51,8 @@ class TestConcatCopy(MockContext):
         msg = FTL.Entity(
             FTL.Identifier('hello'),
             value=CONCAT(
-                COPY(
-                    SOURCE(self.strings, 'hello.start'),
-                ),
-                COPY(
-                    SOURCE(self.strings, 'hello.end'),
-                )
+                LITERAL_FROM(self.strings, 'hello.start'),
+                LITERAL_FROM(self.strings, 'hello.end'),
             )
         )
 
@@ -91,12 +85,8 @@ class TestConcatCopy(MockContext):
         msg = FTL.Entity(
             FTL.Identifier('hello'),
             value=CONCAT(
-                COPY(
-                    SOURCE(self.strings, 'whitespace.begin.start'),
-                ),
-                COPY(
-                    SOURCE(self.strings, 'whitespace.begin.end'),
-                )
+                LITERAL_FROM(self.strings, 'whitespace.begin.start'),
+                LITERAL_FROM(self.strings, 'whitespace.begin.end'),
             )
         )
 
@@ -111,12 +101,8 @@ class TestConcatCopy(MockContext):
         msg = FTL.Entity(
             FTL.Identifier('hello'),
             value=CONCAT(
-                COPY(
-                    SOURCE(self.strings, 'whitespace.end.start'),
-                ),
-                COPY(
-                    SOURCE(self.strings, 'whitespace.end.end'),
-                )
+                LITERAL_FROM(self.strings, 'whitespace.end.start'),
+                LITERAL_FROM(self.strings, 'whitespace.end.end'),
             )
         )
 
@@ -141,17 +127,11 @@ class TestConcatLiteral(MockContext):
         msg = FTL.Entity(
             FTL.Identifier('update-failed'),
             value=CONCAT(
-                COPY(
-                    SOURCE(self.strings, 'update.failed.start'),
-                ),
-                COPY('<a>'),
-                COPY(
-                    SOURCE(self.strings, 'update.failed.linkText'),
-                ),
-                COPY('</a>'),
-                COPY(
-                    SOURCE(self.strings, 'update.failed.end'),
-                ),
+                LITERAL_FROM(self.strings, 'update.failed.start'),
+                LITERAL('<a>'),
+                LITERAL_FROM(self.strings, 'update.failed.linkText'),
+                LITERAL('</a>'),
+                LITERAL_FROM(self.strings, 'update.failed.end'),
             )
         )
 
@@ -175,13 +155,9 @@ class TestConcatInterpolate(MockContext):
         msg = FTL.Entity(
             FTL.Identifier('channel-desc'),
             value=CONCAT(
-                COPY(
-                    SOURCE(self.strings, 'channel.description.start'),
-                ),
+                LITERAL_FROM(self.strings, 'channel.description.start'),
                 EXTERNAL('channelname'),
-                COPY(
-                    SOURCE(self.strings, 'channel.description.end'),
-                )
+                LITERAL_FROM(self.strings, 'channel.description.end'),
             )
         )
 
@@ -208,35 +184,31 @@ class TestConcatReplace(MockContext):
         msg = FTL.Entity(
             FTL.Identifier('community'),
             value=CONCAT(
-                REPLACE(
-                    SOURCE(self.strings, 'community.start'),
+                REPLACE_FROM(
+                    self.strings,
+                    'community.start',
                     {
                         '&brandShortName;': [
                             FTL.ExternalArgument('brand-short-name')
                         ]
                     }
                 ),
-                COPY('<a>'),
-                REPLACE(
-                    SOURCE(self.strings, 'community.mozillaLink'),
+                LITERAL('<a>'),
+                REPLACE_FROM(
+                    self.strings,
+                    'community.mozillaLink',
                     {
                         '&vendorShortName;': [
                             FTL.ExternalArgument('vendor-short-name')
                         ]
                     }
                 ),
-                COPY('</a>'),
-                COPY(
-                    SOURCE(self.strings, 'community.middle')
-                ),
-                COPY('<a>'),
-                COPY(
-                    SOURCE(self.strings, 'community.creditsLink')
-                ),
-                COPY('</a>'),
-                COPY(
-                    SOURCE(self.strings, 'community.end')
-                )
+                LITERAL('</a>'),
+                LITERAL_FROM(self.strings, 'community.middle'),
+                LITERAL('<a>'),
+                LITERAL_FROM(self.strings, 'community.creditsLink'),
+                LITERAL('</a>'),
+                LITERAL_FROM(self.strings, 'community.end')
             )
         )
 

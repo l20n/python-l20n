@@ -8,7 +8,7 @@ import l20n.format.ast as FTL
 
 from l20n.migrate.util import ftl, ftl_resource_to_json, to_json
 from l20n.migrate.context import MergeContext
-from l20n.migrate.transforms import SOURCE, COPY
+from l20n.migrate.transforms import LITERAL, LITERAL_FROM
 
 
 def here(*parts):
@@ -35,7 +35,7 @@ class TestMergeContext(unittest.TestCase):
         self.ctx.add_transforms('aboutDownloads.ftl', [
             FTL.Entity(
                 id=FTL.Identifier('about'),
-                value=COPY('Hardcoded Value')
+                value=LITERAL('Hardcoded Value')
             ),
         ])
 
@@ -58,11 +58,9 @@ class TestMergeContext(unittest.TestCase):
         self.ctx.add_transforms('aboutDownloads.ftl', [
             FTL.Entity(
                 id=FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.title'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.title'
                 )
             ),
         ])
@@ -86,20 +84,16 @@ class TestMergeContext(unittest.TestCase):
         self.ctx.add_transforms('aboutDownloads.ftl', [
             FTL.Entity(
                 id=FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.title'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.title'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('header'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.header'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.header'
                 )
             ),
         ])
@@ -129,20 +123,16 @@ class TestMergeContext(unittest.TestCase):
         self.ctx.add_transforms('aboutDownloads.ftl', [
             FTL.Entity(
                 id=FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.title'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.title'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('header'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.header'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.header'
                 )
             ),
         ])
@@ -186,20 +176,16 @@ class TestMergeContext(unittest.TestCase):
         self.ctx.add_transforms('aboutDownloads.ftl', [
             FTL.Entity(
                 id=FTL.Identifier('title'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.title'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.title'
                 )
             ),
             FTL.Entity(
                 id=FTL.Identifier('header'),
-                value=COPY(
-                    SOURCE(
-                        'aboutDownloads.dtd',
-                        'aboutDownloads.header'
-                    )
+                value=LITERAL_FROM(
+                    'aboutDownloads.dtd',
+                    'aboutDownloads.header'
                 )
             ),
         ])
@@ -283,20 +269,16 @@ class TestIncompleteLocalization(unittest.TestCase):
                 traits=[
                     FTL.Member(
                         key=FTL.Keyword('placeholder', 'xul'),
-                        value=COPY(
-                            SOURCE(
-                                'browser.dtd',
-                                'urlbar.placeholder2'
-                            )
+                        value=LITERAL_FROM(
+                            'browser.dtd',
+                            'urlbar.placeholder2'
                         )
                     ),
                     FTL.Member(
                         key=FTL.Keyword('accesskey', 'xul'),
-                        value=COPY(
-                            SOURCE(
-                                'browser.dtd',
-                                'urlbar.accesskey'
-                            )
+                        value=LITERAL_FROM(
+                            'browser.dtd',
+                            'urlbar.accesskey'
                         )
                     ),
                 ]
