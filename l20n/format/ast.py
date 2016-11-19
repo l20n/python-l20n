@@ -11,6 +11,8 @@ def to_json(value):
 
 
 class Node(object):
+    _pos = False
+
     def traverse(self, fun):
         """Postorder-traverse this node and apply `fun` to all child nodes.
 
@@ -52,6 +54,9 @@ class Node(object):
         return json.dumps(self.toJSON())
 
     def setPosition(self, start, end):
+        if Node._pos is False:
+            return
+
         self._pos = {
             "start": start,
             "end": end

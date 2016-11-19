@@ -97,6 +97,7 @@ class ParseContext():
         return comment
 
     def getSection(self, comment=None):
+        start = self._index
         self._index += 1
         if self._getch() != '[':
             raise self.error('Expected "[[" to open a section')
@@ -115,9 +116,12 @@ class ParseContext():
 
         self._index += 2
 
-        return ast.Section(key, [], comment)
+        section = ast.Section(key, [], comment)
+        section.setPosition(start, self._index)
+        return section
 
     def getEntity(self, comment=None):
+        start = self._index
         id = self.getIdentifier()
 
         members = []
@@ -151,7 +155,9 @@ class ParseContext():
             raise self.error('Expected a value (like: " = value") or a ' +
                              'trait (like: "[key] value")')
 
-        return ast.Entity(id, value, members, comment)
+        entity = ast.Entity(id, value, members, comment)
+        entity.setPosition(start, self._index)
+        return entity
 
     def getWS(self):
         cc = self._getcc()
@@ -188,10 +194,13 @@ class ParseContext():
             cc = self._getcc()
 
         name += self._source[start:self._index]
-        return ast.Identifier(name)
+        ident = ast.Identifier(name)
+        ident.setPosition(start, self._index)
+        return ident
 
     def getKeyword(self):
         name = ''
+        start = self._index
         namespace = self.getIdentifier().name
 
         if self._getch() == '/':
@@ -221,7 +230,10 @@ class ParseContext():
             self._index -= 1
 
         name += self._source[start:self._index]
-        return ast.Keyword(name, namespace)
+
+        kw = ast.Keyword(name, namespace)
+        kw.setPosition(start, self._index)
+        return kw
 
     def getPattern(self):
         buffer = ''
@@ -229,6 +241,7 @@ class ParseContext():
         content = []
         quoteDelimited = None
         firstLine = True
+        start = self._index
 
         ch = self._getch()
 
@@ -301,13 +314,16 @@ class ParseContext():
             else:
                 return None
 
-        return ast.Pattern(
+        pattern = ast.Pattern(
             source=source if self.with_source else None,
             elements=content,
             quoted=quoteDelimited is not None
         )
+        pattern.setPosition(start, self._index)
+        return pattern
 
     def getPlaceable(self):
+        start = self._index
         self._index += 1
 
         expressions = []
@@ -330,7 +346,9 @@ class ParseContext():
             else:
                 raise self.error('Exepected "}" or ","')
 
-        return ast.Placeable(expressions)
+        placeable = ast.Placeable(expressions)
+        placeable.setPosition(start, self._index)
+        return placeable
 
     def getPlaceableExpression(self):
         selector = self.getCallExpression()
@@ -527,6 +545,7 @@ class ParseContext():
         return ast.EntityReference(name)
 
     def getComment(self):
+        start = self._index
         self._index += 1
         if self._getch() == ' ':
             self._index += 1
@@ -555,7 +574,9 @@ class ParseContext():
         else:
             self._index = eol + 1
 
-        return ast.Comment(content)
+        comment = ast.Comment(content)
+        comment.setPosition(start, self._index)
+        return comment
 
     def error(self, message, start=None):
         pos = self._index
@@ -595,6 +616,7 @@ class ParseContext():
             entityStart = self._lastGoodEntryEnd
 
         junk = ast.JunkEntry(self._source[entityStart:nextEntity])
+        junk.setPosition(pos, self._index)
         return junk
 
     def _findEntityStart(self, pos):
@@ -637,11 +659,17 @@ class ParseContext():
 
 
 class FTLParser():
-    def parse(self, string, with_source=True):
+    def parse(self, string, with_source=True, pos=False):
+        _pos = ast.Node._pos
+        ast.Node._pos = pos
         parseContext = ParseContext(string, with_source)
-        return parseContext.getResource()
+        try:
+            [resource, errors] = parseContext.getResource()
+        finally:
+            ast.Node._pos = _pos
+        return [resource, errors]
 
-    def parseResource(self, string, with_source=True):
-        parseContext = ParseContext(string, with_source)
-        [ast, errors] = parseContext.getResource()
-        return [ast.toJSON(), errors]
+    def parseResource(self, string, with_source=True, pos=False):
+        [resource, errors] = \
+            self.parse(string, with_source=with_source, pos=pos)
+        return [resource.toJSON(), errors]
