@@ -8,7 +8,11 @@ import l20n.format.ast as FTL
 from l20n.format.parser import FTLParser
 from l20n.format.serializer import FTLSerializer
 from l20n.util import fold
-from compare_locales.parser import getParser
+try:
+    from compare_locales.parser import getParser
+except ImportError:
+    def getParser(path):
+        raise RuntimeError('compare-locales required')
 
 from cldr import get_plural_categories
 from transforms import SOURCE

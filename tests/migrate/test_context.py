@@ -25,8 +25,11 @@ class TestMergeContext(unittest.TestCase):
         )
 
         self.ctx.add_reference('aboutDownloads.ftl')
-        self.ctx.add_localization('aboutDownloads.dtd')
-        self.ctx.add_localization('aboutDownloads.properties')
+        try:
+            self.ctx.add_localization('aboutDownloads.dtd')
+            self.ctx.add_localization('aboutDownloads.properties')
+        except RuntimeError:
+            self.skipTest('compare-locales required')
 
     def test_hardcoded_node(self):
         self.ctx.add_transforms('aboutDownloads.ftl', [
@@ -269,7 +272,10 @@ class TestIncompleteLocalization(unittest.TestCase):
         )
 
         self.ctx.add_reference('toolbar.ftl')
-        self.ctx.add_localization('browser.dtd')
+        try:
+            self.ctx.add_localization('browser.dtd')
+        except RuntimeError:
+            self.skipTest('compare-locales required')
 
         self.ctx.add_transforms('toolbar.ftl', [
             FTL.Entity(

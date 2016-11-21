@@ -3,7 +3,10 @@
 import unittest
 
 import l20n.format.ast as FTL
-from compare_locales.parser import PropertiesParser
+try:
+    from compare_locales.parser import PropertiesParser
+except ImportError:
+    PropertiesParser = None
 
 from l20n.migrate.util import parse, ftl_message_to_json
 from l20n.migrate.transforms import evaluate, REPLACE, SOURCE
@@ -14,6 +17,7 @@ class MockContext(unittest.TestCase):
         return self.strings.get(key, None).get_val()
 
 
+@unittest.skipUnless(PropertiesParser, 'compare-locales required')
 class TestReplace(MockContext):
     def setUp(self):
         self.strings = parse(PropertiesParser, '''

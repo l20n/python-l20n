@@ -1,4 +1,6 @@
 l20n.egg-info/
 build/
 dist/
+.eggs/
+.tox/
 *.pyc

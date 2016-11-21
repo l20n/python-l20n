@@ -4,7 +4,10 @@ import unittest
 
 import l20n.format.ast as FTL
 from l20n.format.parser import FTLParser
-from compare_locales.parser import PropertiesParser, DTDParser
+try:
+    from compare_locales.parser import PropertiesParser, DTDParser
+except ImportError:
+    PropertiesParser = DTDParser = None
 
 from l20n.migrate.util import parse, ftl, ftl_resource_to_json
 from l20n.migrate.merge import merge_resource
@@ -16,6 +19,8 @@ class MockContext(unittest.TestCase):
         return self.ab_cd_legacy.get(key, None).get_val()
 
 
+@unittest.skipUnless(PropertiesParser and DTDParser,
+                     'compare-locales required')
 class TestMergeMessages(MockContext):
     def setUp(self):
         self.en_us_ftl = parse(FTLParser, ftl('''
@@ -120,6 +125,8 @@ class TestMergeMessages(MockContext):
         )
 
 
+@unittest.skipUnless(PropertiesParser and DTDParser,
+                     'compare-locales required')
 class TestMergeAllEntries(MockContext):
     def setUp(self):
         self.en_us_ftl = parse(FTLParser, ftl('''
@@ -243,6 +250,8 @@ class TestMergeAllEntries(MockContext):
         )
 
 
+@unittest.skipUnless(PropertiesParser and DTDParser,
+                     'compare-locales required')
 class TestMergeSubset(MockContext):
     def setUp(self):
         self.en_us_ftl = parse(FTLParser, ftl('''
