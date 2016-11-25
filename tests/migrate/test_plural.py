@@ -9,7 +9,7 @@ except ImportError:
     PropertiesParser = None
 
 from l20n.migrate.util import parse, ftl_message_to_json
-from l20n.migrate.transforms import evaluate, COPY, PLURALS, REPLACE, SOURCE
+from l20n.migrate.transforms import evaluate, LITERAL, PLURALS_FROM, REPLACE
 
 
 class MockContext(unittest.TestCase):
@@ -29,10 +29,11 @@ class TestPlural(MockContext):
 
         self.message = FTL.Entity(
             FTL.Identifier('delete-all'),
-            value=PLURALS(
-                SOURCE(self.strings, 'deleteAll'),
+            value=PLURALS_FROM(
+                self.strings,
+                'deleteAll',
                 FTL.ExternalArgument('num'),
-                lambda var: COPY(var)
+                lambda var: LITERAL(var)
             )
         )
 
@@ -81,8 +82,9 @@ class TestPluralReplace(MockContext):
     def test_plural_replace(self):
         msg = FTL.Entity(
             FTL.Identifier('delete-all'),
-            value=PLURALS(
-                SOURCE(self.strings, 'deleteAll'),
+            value=PLURALS_FROM(
+                self.strings,
+                'deleteAll',
                 FTL.ExternalArgument('num'),
                 lambda var: REPLACE(
                     var,

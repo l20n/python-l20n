@@ -1,7 +1,7 @@
 # coding=utf8
 
 import l20n.format.ast as FTL
-from l20n.migrate import CONCAT, COPY, EXTERNAL, REPLACE, SOURCE
+from l20n.migrate import CONCAT, EXTERNAL, LITERAL, LITERAL_FROM, REPLACE_FROM
 
 
 def migrate(ctx):
@@ -14,92 +14,72 @@ def migrate(ctx):
         FTL.Entity(
             id=FTL.Identifier('update-failed'),
             value=CONCAT(
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'update.failed.start'
-                    )
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'update.failed.start'
                 ),
-                COPY('<a>'),
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'update.failed.linkText'
-                    )
+                LITERAL('<a>'),
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'update.failed.linkText'
                 ),
-                COPY('</a>'),
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'update.failed.end'
-                    )
+                LITERAL('</a>'),
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'update.failed.end'
                 )
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('channel-desc'),
             value=CONCAT(
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'channel.description.start'
-                    )
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'channel.description.start'
                 ),
                 EXTERNAL('channelname'),
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'channel.description.end'
-                    )
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'channel.description.end'
                 )
             )
         ),
         FTL.Entity(
             id=FTL.Identifier('community'),
             value=CONCAT(
-                REPLACE(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'community.start2'
-                    ),
+                REPLACE_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'community.start2',
                     {
                         '&brandShortName;': [
                             FTL.ExternalArgument('brand-short-name')
                         ]
                     }
                 ),
-                COPY('<a>'),
-                REPLACE(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'community.mozillaLink'
-                    ),
+                LITERAL('<a>'),
+                REPLACE_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'community.mozillaLink',
                     {
                         '&vendorShortName;': [
                             FTL.ExternalArgument('vendor-short-name')
                         ]
                     }
                 ),
-                COPY('</a>'),
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'community.middle2'
-                    )
+                LITERAL('</a>'),
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'community.middle2'
                 ),
-                COPY('<a>'),
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'community.creditsLink'
-                    )
+                LITERAL('<a>'),
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'community.creditsLink'
                 ),
-                COPY('</a>'),
-                COPY(
-                    SOURCE(
-                        'browser/chrome/browser/aboutDialog.dtd',
-                        'community.end3'
-                    )
+                LITERAL('</a>'),
+                LITERAL_FROM(
+                    'browser/chrome/browser/aboutDialog.dtd',
+                    'community.end3'
                 )
             )
         ),

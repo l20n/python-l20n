@@ -9,7 +9,7 @@ except ImportError:
     PropertiesParser = None
 
 from l20n.migrate.util import parse, ftl_message_to_json
-from l20n.migrate.transforms import evaluate, REPLACE, SOURCE
+from l20n.migrate.transforms import evaluate, REPLACE_FROM
 
 
 class MockContext(unittest.TestCase):
@@ -30,8 +30,9 @@ class TestReplace(MockContext):
     def test_replace_one(self):
         msg = FTL.Entity(
             FTL.Identifier(u'hello'),
-            value=REPLACE(
-                SOURCE(self.strings, 'hello'),
+            value=REPLACE_FROM(
+                self.strings,
+                'hello',
                 {'#1': [FTL.ExternalArgument(u'username')]}
             )
         )
@@ -46,8 +47,9 @@ class TestReplace(MockContext):
     def test_replace_two(self):
         msg = FTL.Entity(
             FTL.Identifier(u'welcome'),
-            value=REPLACE(
-                SOURCE(self.strings, 'welcome'),
+            value=REPLACE_FROM(
+                self.strings,
+                'welcome',
                 {'#1': [FTL.ExternalArgument(u'username')],
                  '#2': [FTL.ExternalArgument(u'appname')]}
             )
@@ -63,8 +65,9 @@ class TestReplace(MockContext):
     def test_replace_too_many(self):
         msg = FTL.Entity(
             FTL.Identifier(u'welcome'),
-            value=REPLACE(
-                SOURCE(self.strings, 'welcome'),
+            value=REPLACE_FROM(
+                self.strings,
+                'welcome',
                 {'#1': [FTL.ExternalArgument(u'username')],
                  '#2': [FTL.ExternalArgument(u'appname')],
                  '#3': [FTL.ExternalArgument(u'extraname')]}
@@ -81,8 +84,9 @@ class TestReplace(MockContext):
     def test_replace_too_few(self):
         msg = FTL.Entity(
             FTL.Identifier(u'welcome'),
-            value=REPLACE(
-                SOURCE(self.strings, 'welcome'),
+            value=REPLACE_FROM(
+                self.strings,
+                'welcome',
                 {'#1': [FTL.ExternalArgument(u'username')]}
             )
         )
@@ -97,8 +101,9 @@ class TestReplace(MockContext):
     def test_replace_first(self):
         msg = FTL.Entity(
             FTL.Identifier(u'first'),
-            value=REPLACE(
-                SOURCE(self.strings, 'first'),
+            value=REPLACE_FROM(
+                self.strings,
+                'first',
                 {'#1': [FTL.ExternalArgument(u'foo')]}
             )
         )
@@ -113,8 +118,9 @@ class TestReplace(MockContext):
     def test_replace_last(self):
         msg = FTL.Entity(
             FTL.Identifier(u'last'),
-            value=REPLACE(
-                SOURCE(self.strings, 'last'),
+            value=REPLACE_FROM(
+                self.strings,
+                'last',
                 {'#1': [FTL.ExternalArgument(u'bar')]}
             )
         )
