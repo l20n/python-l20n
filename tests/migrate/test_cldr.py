@@ -12,6 +12,18 @@ class TestPluralCategories(unittest.TestCase):
             ('one', 'few', 'many', 'other')
         )
 
+    def test_fallback_one(self):
+        self.assertEqual(
+            get_plural_categories('ga-IE'),
+            ('one', 'two', 'few', 'many', 'other')
+        )
+
+    def test_fallback_two(self):
+        self.assertEqual(
+            get_plural_categories('ja-JP-mac'),
+            ('other',)
+        )
+
     def test_unknown_language(self):
         with self.assertRaisesRegexp(RuntimeError, 'Unknown language'):
             get_plural_categories('i-default')
