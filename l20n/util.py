@@ -1,5 +1,6 @@
 # coding=utf8
 import textwrap
+import sys
 
 import l20n.format.ast as FTL
 
@@ -12,8 +13,9 @@ def ftl(code):
     end with a newline to match the output of the serializer.
     """
 
-    # The FTL Serializer returns Unicode data so we use it as the baseline.
-    code = code.decode('utf8')
+    if sys.version_info < (3,0):
+        # The FTL Serializer returns Unicode data so we use it as the baseline.
+        code = code.decode('utf8')
 
     # The code might be triple-quoted.
     code = code.lstrip('\n')
@@ -32,8 +34,8 @@ def fold(fun, node, init):
         if not vals:
             return acc
 
-        head = vals[0]
-        tail = vals[1:]
+        head = list(vals)[0]
+        tail = list(vals)[1:]
 
         if isinstance(head, FTL.Node):
             acc = fold(fun, head, acc)

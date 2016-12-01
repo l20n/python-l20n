@@ -14,10 +14,10 @@ except ImportError:
     def getParser(path):
         raise RuntimeError('compare-locales required')
 
-from cldr import get_plural_categories
-from transforms import SOURCE
-from merge import merge_resource
-from util import get_entity
+from .cldr import get_plural_categories
+from .transforms import SOURCE
+from .merge import merge_resource
+from .util import get_entity
 
 
 class MergeContext(object):

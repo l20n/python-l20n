@@ -5,7 +5,7 @@ def to_json(value):
     if isinstance(value, Node):
         return value.toJSON()
     if isinstance(value, list):
-        return map(to_json, value)
+        return list(map(to_json, value))
     else:
         return value
 
@@ -27,7 +27,7 @@ class Node(object):
             if isinstance(value, Node):
                 return value.traverse(fun)
             if isinstance(value, list):
-                return fun(map(visit, value))
+                return fun(list(map(visit, value)))
             else:
                 return fun(value)
 

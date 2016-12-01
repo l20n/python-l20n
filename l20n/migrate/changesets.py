@@ -3,9 +3,9 @@
 import time
 
 
-def by_first_commit(a, b):
+def by_first_commit(item):
     """Order two changesets by their first commit date."""
-    return int(a['first_commit'] - b['first_commit'])
+    return item['first_commit']
 
 
 def convert_blame_to_changesets(blame_json):
@@ -48,11 +48,11 @@ def convert_blame_to_changesets(blame_json):
         } for author in blame_json['authors']
     ]
 
-    for path, keys_info in blame_json['blame'].iteritems():
-        for key, (author_index, timestamp) in keys_info.iteritems():
+    for path, keys_info in blame_json['blame'].items():
+        for key, (author_index, timestamp) in keys_info.items():
             changeset = changesets[author_index]
             changeset['changes'].add((path, key))
             if timestamp < changeset['first_commit']:
                 changeset['first_commit'] = timestamp
 
-    return sorted(changesets, by_first_commit)
+    return sorted(changesets, key=by_first_commit)
