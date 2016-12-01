@@ -2,8 +2,8 @@
 
 import l20n.format.ast as FTL
 
-from transforms import evaluate
-from util import get_entity
+from .transforms import evaluate
+from .util import get_entity
 
 
 def merge_resource(ctx, reference, current, transforms, in_changeset):

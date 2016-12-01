@@ -1,11 +1,18 @@
 # coding=utf8
 
 import unittest
+import sys
 
 from l20n.migrate.cldr import get_plural_categories
 
 
 class TestPluralCategories(unittest.TestCase):
+    def __init__(self, *args):
+        super(TestPluralCategories, self).__init__(*args)
+        if sys.version_info < (3,0):
+            self.assertRaisesRegex = self.assertRaisesRegexp
+
+
     def test_known_language(self):
         self.assertEqual(
             get_plural_categories('pl'),
@@ -25,5 +32,5 @@ class TestPluralCategories(unittest.TestCase):
         )
 
     def test_unknown_language(self):
-        with self.assertRaisesRegexp(RuntimeError, 'Unknown language'):
+        with self.assertRaisesRegex(RuntimeError, 'Unknown language'):
             get_plural_categories('i-default')

@@ -21,7 +21,7 @@ class Transform(FTL.Node):
 class SOURCE(Transform):
     """Declare the source translation to be migrated with other transforms.
 
-    When evaluated `SOURCE` returns a simple string value.  All \uXXXX from the
+    When evaluated `SOURCE` returns a simple string value.  All \\uXXXX from the
     original translations are converted beforehand to the literal characters
     they encode.
 

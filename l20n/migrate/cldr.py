@@ -4,12 +4,12 @@ import pkgutil
 import json
 
 
-def in_canonical_order(a, b):
-    return canonical_order.index(a) - canonical_order.index(b)
+def in_canonical_order(item):
+    return canonical_order.index(item)
 
 
 cldr_plurals = json.loads(
-    pkgutil.get_data('l20n.migrate', 'cldr_data/plurals.json')
+    pkgutil.get_data('l20n.migrate', 'cldr_data/plurals.json').decode('utf-8')
 )
 
 rules = cldr_plurals['supplemental']['plurals-type-cardinal']
@@ -20,7 +20,7 @@ for lang, rules in rules.items():
     categories[lang] = tuple(sorted(map(
         lambda key: key.replace('pluralRule-count-', ''),
         rules.keys()
-    ), in_canonical_order))
+    ), key=in_canonical_order))
 
 
 def get_plural_categories(lang):
