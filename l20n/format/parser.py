@@ -200,7 +200,7 @@ class ParseContext():
 
     def getKeyword(self):
         name = ''
-        start = self._index
+        keyword_start = self._index
         namespace = self.getIdentifier().name
 
         if self._getch() == '/':
@@ -232,7 +232,7 @@ class ParseContext():
         name += self._source[start:self._index]
 
         kw = ast.Keyword(name, namespace)
-        kw.setPosition(start, self._index)
+        kw.setPosition(keyword_start, self._index)
         return kw
 
     def getPattern(self):
@@ -241,7 +241,10 @@ class ParseContext():
         content = []
         quoteDelimited = None
         firstLine = True
-        start = self._index
+        pattern_start = self._index
+        # For string pos information we need to know where the string ended
+        # in the scenario where we look ahead for multiline
+        pattern_end = None
 
         ch = self._getch()
 
@@ -261,10 +264,12 @@ class ParseContext():
             if ch == '\n':
                 if quoteDelimited:
                     raise self.error('Unclosed string')
+                pattern_end = self._index
                 self._index += 1
                 self.getLineWS()
                 if self._getch() != '|':
                     break
+                pattern_end = None
                 if firstLine and len(buffer):
                     raise self.error('Multiline string should have the ID ' +
                                      'empty')
@@ -319,11 +324,13 @@ class ParseContext():
             elements=content,
             quoted=quoteDelimited is not None
         )
-        pattern.setPosition(start, self._index)
+        if pattern_end is None:
+            pattern_end = self._index
+        pattern.setPosition(pattern_start, pattern_end)
         return pattern
 
     def getPlaceable(self):
-        start = self._index
+        placeable_start = self._index
         self._index += 1
 
         expressions = []
@@ -347,7 +354,7 @@ class ParseContext():
                 raise self.error('Exepected "}" or ","')
 
         placeable = ast.Placeable(expressions)
-        placeable.setPosition(start, self._index)
+        placeable.setPosition(placeable_start, self._index)
         return placeable
 
     def getPlaceableExpression(self):
