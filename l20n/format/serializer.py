@@ -80,7 +80,7 @@ class FTLSerializer():
                 str += self.dumpPlaceable(elem)
 
         if pattern['quoted']:
-            return u'"{}"'.format(str)
+            return u'"{}"'.format(str.replace('"', '\\"'))
         return str
 
     def dumpPlaceable(self, placeable):

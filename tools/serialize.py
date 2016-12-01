@@ -5,8 +5,8 @@ import sys, os
 
 sys.path.append('./')
 import codecs
-import ftl.format.parser
-import ftl.format.serializer
+import l20n.format.parser
+import l20n.format.serializer
 import json
 
 def read_file(path):
@@ -15,7 +15,7 @@ def read_file(path):
     return text
 
 def print_l20n(fileType, data):
-    l20nSerializer = ftl.format.serializer.FTLSerializer()
+    l20nSerializer = l20n.format.serializer.FTLSerializer()
     result = None
 
     if fileType == 'json':
@@ -23,7 +23,7 @@ def print_l20n(fileType, data):
     elif fileType == 'ftl':
         #print('----- ORIGINAL -----')
         #print(data)
-        l20nParser = ftl.format.parser.FTLParser()
+        l20nParser = l20n.format.parser.FTLParser()
         #print('----- AST -----')
         [ast, errors] = l20nParser.parseResource(data)
         #print(json.dumps(ast, indent=2, ensure_ascii=False))
