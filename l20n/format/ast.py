@@ -35,8 +35,11 @@ class Node(object):
             **{
                 name: visit(value)
                 for name, value in vars(self).items()
+                if name is not '_pos'
             }
         )
+        if isinstance(self._pos, dict):
+            node._pos = self._pos.copy()
 
         return fun(node)
 
