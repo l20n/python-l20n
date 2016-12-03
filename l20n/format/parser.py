@@ -582,7 +582,7 @@ class ParseContext():
             self._index = eol + 1
 
         comment = ast.Comment(content)
-        comment.setPosition(start, self._index)
+        comment.setPosition(start, self._index - 1)
         return comment
 
     def error(self, message, start=None):

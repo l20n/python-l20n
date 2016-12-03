@@ -29,9 +29,9 @@ class TestPosition(unittest.TestCase):
         elif isinstance(value, ast.Identifier):
             ref_val = value.name
         elif isinstance(value, ast.Comment):
-            ref_val = u'#{}\n'.format(value.content)
+            ref_val = u'#{}'.format(value.content)
         elif isinstance(value, ast.Section):
-            ref_val = u'[[ {} ]]\n'.format(value.key.name)
+            ref_val = u'[[ {} ]]'.format(value.key.name)
         elif isinstance(value, ast.Entity):
             # cheating this test, we'll test the entities explicitly
             ref_val = pos_val
