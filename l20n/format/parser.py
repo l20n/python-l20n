@@ -143,6 +143,17 @@ class ParseContext():
 
         ch = self._getch()
 
+        # If there is a value, and it has a set position
+        # take the end position of the value and set is as the end
+        # position of the entity.
+        #
+        # self._index at this point is already affected by a look-ahead
+        # for multiline in getPattern
+        if (value is not None and value._pos):
+            entity_end = value._pos['end']
+        else:
+            entity_end = self._index
+
         if ch == '\n':
             self._index += 1
             self.getLineWS()
@@ -151,12 +162,13 @@ class ParseContext():
         if (ch == '[' and self._source[self._index + 1] != '[') or \
                 ch == '*':
             members = self.getMembers()
+            entity_end = self._index
         elif value is None:
             raise self.error('Expected a value (like: " = value") or a ' +
                              'trait (like: "[key] value")')
 
         entity = ast.Entity(id, value, members, comment)
-        entity.setPosition(start, self._index)
+        entity.setPosition(start, entity_end)
         return entity
 
     def getWS(self):

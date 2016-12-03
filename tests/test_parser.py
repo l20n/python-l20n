@@ -59,7 +59,7 @@ class TestPosition(unittest.TestCase):
             functools.partial(self.position_test, content, entities, placables))
 
         # Test entities and placables
-        self.assertListEqual(entities, [l+'\n' for l in content.splitlines()])
+        self.assertListEqual(entities, [l for l in content.splitlines()])
         self.assertListEqual(placables, [])
 
     def test_comment(self):
@@ -75,7 +75,7 @@ class TestPosition(unittest.TestCase):
             functools.partial(self.position_test, content, entities, placables))
 
         # Test entities and placables
-        self.assertListEqual(entities, ['bar = Bar\n'])
+        self.assertListEqual(entities, ['bar = Bar'])
         self.assertListEqual(placables, [])
 
     def test_section(self):
@@ -91,7 +91,7 @@ class TestPosition(unittest.TestCase):
             functools.partial(self.position_test, content, entities, placables))
 
         # Test entities and placables
-        self.assertListEqual(entities, ['bar = Bar\n'])
+        self.assertListEqual(entities, ['bar = Bar'])
         self.assertListEqual(placables, [])
 
     def test_complex_values(self):
